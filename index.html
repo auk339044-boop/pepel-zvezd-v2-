@@ -139,67 +139,71 @@
     <audio id="space-ambient" loop preload="auto">
         <source src="https://soundhelix.com" type="audio/mp3">
     </audio>
-    <script>
+        <script>
         function sendFeedback() {
-            const messageInput = document.getElementById('user-msg');
-            const statusText = document.getElementById('status-text');
-            const messageText = messageInput.value.trim();
+            var input = document.getElementById('user-msg');
+            var status = document.getElementById('status-text');
+            var text = input.value.trim();
 
-            statusText.style.display = "block";
+            status.style.display = 'block';
 
-            if (!messageText) {
-                statusText.style.color = "#ef4444";
-                statusText.innerText = "Введите текст сообщения!";
+            if (!text) {
+                status.style.color = '#ef4444';
+                status.innerText = 'Введите текст сообщения!';
                 return;
             }
 
-            statusText.style.color = "#94a3b8";
-            statusText.innerText = "Отправка...";
+            status.style.color = '#94a3b8';
+            status.innerText = 'Отправка...';
 
             fetch('/api/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: messageText })
+                body: JSON.stringify({ text: text })
             })
-            .then(response => response.json())
-            .then(result => {
-                if (result.ok) {
-                    statusText.style.color = "#4ade80";
-                    statusText.innerText = "✨ Сообщение успешно доставлено!";
-                    messageInput.value = ""; 
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.ok) {
+                    status.style.color = '#4ade80';
+                    status.innerText = '✨ Сообщение успешно доставлено!';
+                    input.value = '';
                 } else {
-                    statusText.style.color = "#ef4444";
-                    statusText.innerText = `Ошибка Telegram: ${result.description || 'Проверьте токен/ID в api/send.js'}`;
+                    status.style.color = '#ef4444';
+                    status.innerText = 'Ошибка Telegram: ' + (data.description || 'Проверьте токен или ID');
                 }
             })
-            .catch(() => {
-                statusText.style.color = "#ef4444";
-                statusText.innerText = "Ошибка соединения с сервером сайта.";
+            .catch(function(err) {
+                status.style.color = '#ef4444';
+                status.innerText = 'Ошибка соединения: ' + err.message;
             });
         }
 
-        const ambientAudio = document.getElementById('space-ambient');
-        ambientAudio.volume = 0.25;
-
-        function startMusic() {
-            ambientAudio.play().then(() => {
-                document.removeEventListener('click', startMusic);
-                document.removeEventListener('touchstart', startMusic);
-            }).catch(() => {});
+        var audio = document.getElementById('space-ambient');
+        if (audio) {
+            audio.volume = 0.25;
+            var playAudio = function() {
+                audio.play().catch(function(){});
+                document.removeEventListener('click', playAudio);
+                document.removeEventListener('touchstart', playAudio);
+            };
+            document.addEventListener('click', playAudio);
+            document.addEventListener('touchstart', playAudio);
         }
-        document.addEventListener('click', startMusic);
-        document.addEventListener('touchstart', startMusic);
 
         function openTikTok() {
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            const username = "ashesstars_bot";
-            if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-                window.location.href = `snssdk1128://user/profile/` + username;
-                setTimeout(() => { window.open(`https://tiktok.com@` + username, '_blank'); }, 2000);
-            } else if (/android/i.test(userAgent)) {
-                window.location.href = `intent://://tiktok.com{username}#Intent;scheme=https;package=com.zhiliaoapp.musically;end;`;
-                setTimeout(() => { window.open(`https://tiktok.com@` + username, '_blank'); }, 2000);
+            var ua = navigator.userAgent || '';
+            var user = 'ashesstars_bot';
+            if (/iPad|iPhone|iPod/.test(ua)) {
+                window.location.href = 'snssdk1128://user/profile/' + user;
+                setTimeout(function() { window.open('https://tiktok.com@' + user, '_blank'); }, 2000);
+            } else if (/android/i.test(ua)) {
+                window.location.href = 'intent://://tiktok.com@' + user + '#Intent;scheme=https;package=com.zhiliaoapp.musically;end;';
+                setTimeout(function() { window.open('https://tiktok.com@' + user, '_blank'); }, 2000);
             } else {
-window.open(https://tiktok.com@ + username, '_blank');
-}
-}
+                window.open('https://tiktok.com@' + user, '_blank');
+            }
+        }
+    </script>
+</body>
+</html>
+
