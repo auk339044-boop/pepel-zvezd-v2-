@@ -49,8 +49,11 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 1. Создаем новую тему в списке чатов админов
-        const topicTitle = `🌐 Сайт: ${text.slice(0, 25)}`;
+        // Генерируем случайный 4-значный номер обращения (от 1000 до 9999)
+        const ticketId = Math.floor(1000 + Math.random() * 9000);
+        const topicTitle = `#сайт_${ticketId}`;
+
+        // 1. Создаем отдельную тему с уникальным номером
         const topicRes = await tgRequest(TG_BOT_TOKEN, 'createForumTopic', {
             chat_id: TG_CHAT_ID,
             name: topicTitle
@@ -60,12 +63,12 @@ export default async function handler(req, res) {
             return res.status(200).json(topicRes);
         }
 
-        // 2. Отправляем текст обращения внутрь новой темы
+        // 2. Отправляем текст обращения внутрь созданной темы
         const threadId = topicRes.result.message_thread_id;
         const msgRes = await tgRequest(TG_BOT_TOKEN, 'sendMessage', {
             chat_id: TG_CHAT_ID,
             message_thread_id: threadId,
-            text: `📬 <b>Новое обращение с сайта!</b>\n\n${text}`,
+            text: `📬 <b>Обращение ${topicTitle}</b>\n\n${text}`,
             parse_mode: 'HTML'
         });
 
