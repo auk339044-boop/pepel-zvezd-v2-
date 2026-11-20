@@ -199,7 +199,10 @@
                 audio.play().catch(function(){});
                 document.removeEventListener('click', playAudio);
                 document.removeEventListener('touchstart', playAudio);
-            }
-            </script>
+            };
+            document.addEventListener('click', playAudio);
+            document.addEventListener('touchstart', playAudio);
+        }
+    </script>
 </body>
 </html>
