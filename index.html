@@ -110,7 +110,7 @@
             font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s;
         }
         .btn-submit:hover { opacity: 0.9; box-shadow: 0 0 15px rgba(192, 132, 252, 0.4); }
-        .status-msg { font-size: 12px; margin-top: 8px; display: none; font-weight: 500; }
+        .status-msg { font-size: 13px; margin-top: 10px; display: none; font-weight: 600; }
         footer { margin-top: 32px; font-size: 11px; color: #475569; letter-spacing: 0.5px; }
     </style>
 </head>
@@ -126,12 +126,12 @@
             <a href="tg://resolve?domain=ashesstars_bot" class="btn-link btn-main">🌌 Запустить Telegram Бота</a>
             <a href="tg://resolve?domain=anketashesstars_bot" class="btn-link">📝 Заполнить анкету (Анкетница)</a>
             <a href="tg://resolve?domain=pepelzvezdotzv" class="btn-link">⭐️ Отзывы о боте</a>
-            <div onclick="openTikTok()" class="btn-link">🎵 Наш TikTok</div>
+            <div id="tiktok-btn" class="btn-link">🎵 Наш TikTok</div>
         </div>
         <div class="feedback-form">
             <h3>📩 Оставить обращение:</h3>
             <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение или отзыв здесь..."></textarea>
-            <button onclick="sendFeedback()" class="btn-submit">Отправить сообщение</button>
+            <button type="button" id="send-btn" class="btn-submit">Отправить сообщение</button>
             <div id="status-text" class="status-msg"></div>
         </div>
         <footer>&copy; 2026 Пепел звезд. Все права защищены.</footer>
@@ -139,8 +139,8 @@
     <audio id="space-ambient" loop preload="auto">
         <source src="https://soundhelix.com" type="audio/mp3">
     </audio>
-        <script>
-        function sendFeedback() {
+    <script>
+        document.getElementById('send-btn').addEventListener('click', function() {
             var input = document.getElementById('user-msg');
             var status = document.getElementById('status-text');
             var text = input.value.trim();
@@ -169,28 +169,16 @@
                     input.value = '';
                 } else {
                     status.style.color = '#ef4444';
-                    status.innerText = 'Ошибка Telegram: ' + (data.description || 'Проверьте токен или ID');
+                    status.innerText = 'Ошибка Telegram: ' + (data.description || 'Проверьте токен/ID в api/send.js');
                 }
             })
             .catch(function(err) {
                 status.style.color = '#ef4444';
                 status.innerText = 'Ошибка соединения: ' + err.message;
             });
-        }
+        });
 
-        var audio = document.getElementById('space-ambient');
-        if (audio) {
-            audio.volume = 0.25;
-            var playAudio = function() {
-                audio.play().catch(function(){});
-                document.removeEventListener('click', playAudio);
-                document.removeEventListener('touchstart', playAudio);
-            };
-            document.addEventListener('click', playAudio);
-            document.addEventListener('touchstart', playAudio);
-        }
-
-        function openTikTok() {
+        document.getElementById('tiktok-btn').addEventListener('click', function() {
             var ua = navigator.userAgent || '';
             var user = 'ashesstars_bot';
             if (/iPad|iPhone|iPod/.test(ua)) {
@@ -202,8 +190,16 @@
             } else {
                 window.open('https://tiktok.com@' + user, '_blank');
             }
-        }
-    </script>
+        });
+
+        var audio = document.getElementById('space-ambient');
+        if (audio) {
+            audio.volume = 0.25;
+            var playAudio = function() {
+                audio.play().catch(function(){});
+                document.removeEventListener('click', playAudio);
+                document.removeEventListener('touchstart', playAudio);
+            }
+            </script>
 </body>
 </html>
-
