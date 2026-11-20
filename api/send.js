@@ -49,11 +49,11 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Генерируем случайный 4-значный номер обращения (от 1000 до 9999)
-        const ticketId = Math.floor(1000 + Math.random() * 9000);
-        const topicTitle = `#сайт_${ticketId}`;
+        // Генерируем случайный 7-значный цифровой идентификатор (от 1000000 до 9999999)
+        const ticketId = Math.floor(1000000 + Math.random() * 9000000);
+        const topicTitle = `#${ticketId}`;
 
-        // 1. Создаем отдельную тему с уникальным номером
+        // 1. Создаем отдельную тему с цифровым тегом
         const topicRes = await tgRequest(TG_BOT_TOKEN, 'createForumTopic', {
             chat_id: TG_CHAT_ID,
             name: topicTitle
