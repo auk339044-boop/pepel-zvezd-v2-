@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пепел звезд | Официальные ссылки</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(30, 41, 59, 0.4);
+            --text-color: #f8fafc;
+            --accent-color: #c084fc;
+            --hover-color: #e9d5ff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+        .space-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 50%, #020617 100%);
+            z-index: -2;
+        }
+        .stars-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+            z-index: -1;
+            animation: spaceMove 120s linear infinite;
+        }
+        @keyframes spaceMove {
+            from { background-position: 0 0, 40px 60px, 130px 270px; }
+            to { background-position: 550px 1100px, 1400px 1050px, 1000px 1350px; }
+        }
+        .container {
+            width: 100%; max-width: 450px; text-align: center;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            padding: 30px 24px; border-radius: 24px;
+            background: rgba(15, 23, 42, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .profile-star {
+            width: 80px; height: 80px; margin: 0 auto 20px; position: relative; background: #fff;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            animation: pulseGlow 4s ease-in-out infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { transform: scale(0.95) rotate(0deg); background: #f3e8ff; }
+            100% { transform: scale(1.05) rotate(5deg); background: #ffffff; }
+        }
+        .star-glow-effect {
+            position: absolute; width: 100px; height: 100px;
+            background: radial-gradient(circle, rgba(192,132,252,0.4) 0%, transparent 70%);
+            top: 20px; left: 50%; transform: translateX(-50%); z-index: -1; pointer-events: none;
+        }
+        h1 {
+            font-size: 26px; font-weight: 700; margin-bottom: 8px; letter-spacing: 1px;
+            background: linear-gradient(135deg, #fff 30%, #c084fc 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .description { font-size: 14px; color: #94a3b8; margin-bottom: 32px; }
+        .links-container { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+        .btn-link {
+            display: block; background-color: var(--card-bg); color: var(--text-color);
+            text-decoration: none; padding: 16px 24px; border-radius: 14px;
+            font-size: 16px; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer;
+        }
+        .btn-link:hover {
+            transform: translateY(-3px); background-color: rgba(192, 132, 252, 0.15);
+            border-color: var(--accent-color); box-shadow: 0 0 20px rgba(192, 132, 252, 0.3);
+        }
+        .btn-main {
+            background: linear-gradient(135deg, #6b21a8 0%, #3b0764 100%);
+            border: 1px solid rgba(192, 132, 252, 0.3); box-shadow: 0 4px 15px rgba(107, 33, 168, 0.4);
+        }
+        .btn-main:hover {
+            background: linear-gradient(135deg, #7e22ce 0%, #4c1d95 100%);
+            border-color: #e9d5ff; box-shadow: 0 0 25px rgba(168, 85, 247, 0.6);
+        }
+        .feedback-form {
+            background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px; padding: 20px; text-align: left;
+        }
+        .feedback-form h3 { font-size: 16px; margin-bottom: 12px; color: var(--hover-color); font-weight: 600; }
+        .feedback-textarea {
+            width: 100%; height: 90px; background: rgba(11, 15, 25, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
+            padding: 12px; color: #fff; font-family: inherit; font-size: 14px;
+            resize: none; outline: none; transition: border-color 0.2s; margin-bottom: 12px;
+        }
+        .feedback-textarea:focus { border-color: var(--accent-color); }
+        .btn-submit {
+            width: 100%; background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+            color: #0b0f19; border: none; padding: 12px; border-radius: 10px;
+            font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-submit:hover { opacity: 0.9; box-shadow: 0 0 15px rgba(192, 132, 252, 0.4); }
+        .status-msg { font-size: 12px; margin-top: 8px; display: none; font-weight: 500; }
+        footer { margin-top: 32px; font-size: 11px; color: #475569; letter-spacing: 0.5px; }
+    </style>
+</head>
+<body>
+    <div class="space-bg"></div>
+    <div class="stars-overlay"></div>
+    <div class="container">
+        <div class="star-glow-effect"></div>
+        <div class="profile-star"></div>
+        <h1>Пепел звезд</h1>
+        <p class="description">Официальные ресурсы и каналы связи</p>
+        <div class="links-container">
+            <a href="tg://resolve?domain=ashesstars_bot" class="btn-link btn-main">🌌 Запустить Telegram Бота</a>
+            <a href="tg://resolve?domain=anketashesstars_bot" class="btn-link">📝 Заполнить анкету (Анкетница)</a>
+            <a href="tg://resolve?domain=pepelzvezdotzv" class="btn-link">⭐️ Отзывы о боте</a>
+            <div onclick="openTikTok()" class="btn-link">🎵 Наш TikTok</div>
+        </div>
+        <div class="feedback-form">
+            <h3>📩 Оставить обращение:</h3>
+            <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение или отзыв здесь..."></textarea>
+            <button onclick="sendFeedback()" class="btn-submit">Отправить сообщение</button>
+            <div id="status-text" class="status-msg"></div>
+        </div>
+        <footer>&copy; 2026 Пепел звезд. Все права защищены.</footer>
+    </div>
+    <audio id="space-ambient" loop preload="auto">
+        <source src="https://soundhelix.com" type="audio/mp3">
+    </audio>
+    <script>
+        function sendFeedback() {
+            const messageInput = document.getElementById('user-msg');
+            const statusText = document.getElementById('status-text');
+            const messageText = messageInput.value.trim();
+
+            statusText.style.display = "block";
+
+            if (!messageText) {
+                statusText.style.color = "#ef4444";
+                statusText.innerText = "Введите текст сообщения!";
+                return;
+            }
+
+            statusText.style.color = "#94a3b8";
+            statusText.innerText = "Отправка...";
+
+            fetch('/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: messageText })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.ok) {
+                    statusText.style.color = "#4ade80";
+                    statusText.innerText = "✨ Сообщение успешно доставлено!";
+                    messageInput.value = ""; 
+                } else {
+                    statusText.style.color = "#ef4444";
+                    statusText.innerText = `Ошибка Telegram: ${result.description || 'Проверьте токен/ID в api/send.js'}`;
+                }
+            })
+            .catch(() => {
+                statusText.style.color = "#ef4444";
+                statusText.innerText = "Ошибка соединения с сервером сайта.";
+            });
+        }
+
+        const ambientAudio = document.getElementById('space-ambient');
+        ambientAudio.volume = 0.25;
+
+        function startMusic() {
+            ambientAudio.play().then(() => {
+                document.removeEventListener('click', startMusic);
+                document.removeEventListener('touchstart', startMusic);
+            }).catch(() => {});
+        }
+        document.addEventListener('click', startMusic);
+        document.addEventListener('touchstart', startMusic);
+
+        function openTikTok() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const username = "ashesstars_bot";
+            if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                window.location.href = `snssdk1128://user/profile/` + username;
+                setTimeout(() => { window.open(`https://tiktok.com@` + username, '_blank'); }, 2000);
+            } else if (/android/i.test(userAgent)) {
+                window.location.href = `intent://://tiktok.com{username}#Intent;scheme=https;package=com.zhiliaoapp.musically;end;`;
+                setTimeout(() => { window.open(`https://tiktok.com@` + username, '_blank'); }, 2000);
+            } else {
+              window.open(https://tiktok.com@ + username, '_blank');
+}
+}
