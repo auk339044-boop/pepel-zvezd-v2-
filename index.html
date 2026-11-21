@@ -139,21 +139,54 @@
     <audio id="space-ambient" loop preload="auto">
         <source src="https://soundhelix.com" type="audio/mp3">
     </audio>
-    <script>
+        <script>
         var btn = document.getElementById('send-btn');
+        var COOLDOWN_SEC = 30; // Задержка между отправками в секундах
+
+        function updateCooldown() {
+            var lastSent = localStorage.getItem('last_msg_time');
+            if (!lastSent || !btn) return false;
+            var passed = Math.floor((Date.now() - parseInt(lastSent, 10)) / 1000);
+            if (passed < COOLDOWN_SEC) {
+                var left = COOLDOWN_SEC - passed;
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                btn.innerText = 'Подождите ' + left + ' сек...';
+                setTimeout(updateCooldown, 1000);
+                return true;
+            } else {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.innerText = 'Отправить сообщение';
+                return false;
+            }
+        }
+
+        updateCooldown();
+
         if (btn) {
             btn.onclick = function() {
+                if (updateCooldown()) return;
+
                 var input = document.getElementById('user-msg');
                 var status = document.getElementById('status-text');
                 var text = input.value.trim();
+
                 status.style.display = 'block';
-                if (!text) {
+
+                if (text.length < 2) {
                     status.style.color = '#ef4444';
-                    status.innerText = 'Введите текст сообщения!';
+                    status.innerText = 'Введите текст сообщения (минимум 2 символа)!';
                     return;
                 }
+
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
                 status.style.color = '#94a3b8';
                 status.innerText = 'Отправка...';
+
                 fetch('/api/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -165,12 +198,18 @@
                         status.style.color = '#4ade80';
                         status.innerText = '✨ Сообщение доставлено!';
                         input.value = '';
+                        localStorage.setItem('last_msg_time', Date.now().toString());
+                        updateCooldown();
                     } else {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
                         status.style.color = '#ef4444';
                         status.innerText = 'Ошибка: ' + (d.description || 'Проверьте настройки сервера');
                     }
                 })
                 .catch(function() {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
                     status.style.color = '#ef4444';
                     status.innerText = 'Ошибка связи с сервером.';
                 });
