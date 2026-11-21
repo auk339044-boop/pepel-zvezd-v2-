@@ -22,7 +22,7 @@ function tgRequest(token, method, payload) {
                 try {
                     resolve(JSON.parse(data));
                 } catch (e) {
-                    reject(new Error('Неверный ответ от Telegram'));
+                    reject(new Error('Invalid Telegram response'));
                 }
             });
         });
@@ -33,27 +33,39 @@ function tgRequest(token, method, payload) {
     });
 }
 
+function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+    }[tag]));
+}
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // ВПИШИТЕ СЮДА ТОКЕН И ID ГРУППЫ "пепел звезд [админы]" (с -100):
-    const TG_BOT_TOKEN = "8596308504:AAHsYDjii8P7IKdNm-7ODMbvGpFzglAIArs".trim();
-    const TG_CHAT_ID = "-1004483730224".trim();
+    const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN;
+    const TG_CHAT_ID = process.env.TG_CHAT_ID;
+
+    if (!TG_BOT_TOKEN || !TG_CHAT_ID) {
+        return res.status(500).json({ ok: false, description: 'Не настроены переменные окружения на Vercel' });
+    }
 
     const { text } = req.body || {};
 
-    if (!text) {
-        return res.status(400).json({ ok: false, description: 'Пустое сообщение' });
+    if (!text || text.trim().length < 2) {
+        return res.status(400).json({ ok: false, description: 'Сообщение слишком короткое' });
     }
 
     try {
-        // Генерируем случайный 7-значный цифровой идентификатор (от 1000000 до 9999999)
         const ticketId = Math.floor(1000000 + Math.random() * 9000000);
         const topicTitle = `#${ticketId}`;
+        const safeText = escapeHTML(text.trim().slice(0, 1000));
 
-        // 1. Создаем отдельную тему с цифровым тегом
         const topicRes = await tgRequest(TG_BOT_TOKEN, 'createForumTopic', {
             chat_id: TG_CHAT_ID,
             name: topicTitle
@@ -63,12 +75,11 @@ export default async function handler(req, res) {
             return res.status(200).json(topicRes);
         }
 
-        // 2. Отправляем текст обращения внутрь созданной темы
         const threadId = topicRes.result.message_thread_id;
         const msgRes = await tgRequest(TG_BOT_TOKEN, 'sendMessage', {
             chat_id: TG_CHAT_ID,
             message_thread_id: threadId,
-            text: `📬 <b>Обращение ${topicTitle}</b>\n\n${text}`,
+            text: `📬 <b>Обращение ${topicTitle}</b>\n\n${safeText}`,
             parse_mode: 'HTML'
         });
 
