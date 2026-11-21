@@ -8,7 +8,6 @@
 
 using json = nlohmann::json;
 
-// Идентичная функция хэширования для проверки подлинности запроса на стороне сервера
 uint64_t verify_hash(const std::string& str, uint64_t nonce) {
     uint64_t hash = 14695981039346656037ULL;
     for (unsigned char c : str) {
@@ -20,7 +19,6 @@ uint64_t verify_hash(const std::string& str, uint64_t nonce) {
     return hash;
 }
 
-// Экранирование HTML-спецсимволов для защиты от поломок разметки Telegram
 std::string escape_html(const std::string& data) {
     std::string buffer;
     buffer.reserve(data.size());
@@ -36,13 +34,11 @@ std::string escape_html(const std::string& data) {
     return buffer;
 }
 
-// Функция обратного вызова для записи ответа от серверов Telegram
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     userp->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
 
-// Выполнение HTTPS POST-запроса к Telegram Bot API через libcurl
 json telegram_api_request(const std::string& token, const std::string& method, const json& payload) {
     CURL* curl = curl_easy_init();
     std::string readBuffer;
@@ -71,7 +67,6 @@ json telegram_api_request(const std::string& token, const std::string& method, c
 }
 
 int main() {
-    // Читаем токены из переменных окружения операционной системы
     const char* env_token = std::getenv("TG_BOT_TOKEN");
     const char* env_chat = std::getenv("TG_CHAT_ID");
 
@@ -85,7 +80,6 @@ int main() {
 
     httplib::Server svr;
 
-    // Разрешаем кросс-доменные запросы (CORS)
     svr.Options("/api/send", [](const httplib::Request&, httplib::Response& res) {
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -104,20 +98,23 @@ int main() {
         }
 
         std::string text = body["text"];
+        std::string category = body.value("category", "review");
         uint64_t nonce = body["nonce"];
         int ticket_id = body.value("ticketId", 1000000);
 
-        // Проверяем Proof-of-Work подпись от клиентского C++ модуля
         if (verify_hash(text, nonce) % 10000 != 0) {
             res.status = 403;
             res.set_content(R"({"ok":false,"description":"Invalid Proof-of-Work signature"})", "application/json");
             return;
         }
 
-        std::string topic_title = "#" + std::to_string(ticket_id);
+        bool is_admin = (category == "admin");
+        std::string tag_prefix = is_admin ? "админ" : "отзыв";
+        std::string category_label = is_admin ? "🚨 Вызов админа" : "⭐️ Отзыв";
+
+        std::string topic_title = "#" + tag_prefix + "_" + std::to_string(ticket_id);
         std::string safe_text = escape_html(text.substr(0, 1000));
 
-        // 1. Создаем новую форум-тему в супергруппе
         json topic_res = telegram_api_request(bot_token, "createForumTopic", {
             {"chat_id", chat_id},
             {"name", topic_title}
@@ -130,11 +127,10 @@ int main() {
 
         int thread_id = topic_res["result"]["message_thread_id"];
 
-        // 2. Отправляем сообщение внутрь созданной темы
         json msg_res = telegram_api_request(bot_token, "sendMessage", {
             {"chat_id", chat_id},
             {"message_thread_id", thread_id},
-            {"text", "📬 <b>Обращение " + topic_title + "</b>\n\n" + safe_text},
+            {"text", "📬 <b>Обращение " + topic_title + "</b>\n📌 <b>Категория:</b> " + category_label + "\n\n" + safe_text},
             {"parse_mode", "HTML"}
         });
 
@@ -145,4 +141,3 @@ int main() {
     svr.listen("0.0.0.0", 8080);
     return 0;
 }
-
