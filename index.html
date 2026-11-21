@@ -97,6 +97,16 @@
             border-radius: 16px; padding: 20px; text-align: left;
         }
         .feedback-form h3 { font-size: 16px; margin-bottom: 12px; color: var(--hover-color); font-weight: 600; }
+        
+        /* Стили для выпадающего списка категорий */
+        .feedback-select {
+            width: 100%; background: rgba(11, 15, 25, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
+            padding: 10px 12px; color: #f8fafc; font-family: inherit; font-size: 14px;
+            outline: none; transition: border-color 0.2s; margin-bottom: 12px; cursor: pointer;
+        }
+        .feedback-select:focus { border-color: var(--accent-color); }
+
         .feedback-textarea {
             width: 100%; height: 90px; background: rgba(11, 15, 25, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
@@ -126,11 +136,18 @@
             <a href="tg://resolve?domain=ashesstars_bot" class="btn-link btn-main">🌌 Запустить Telegram Бота</a>
             <a href="tg://resolve?domain=anketashesstars_bot" class="btn-link">📝 Заполнить анкету (Анкетница)</a>
             <a href="tg://resolve?domain=pepelzvezdotzv" class="btn-link">⭐️ Отзывы о боте</a>
-            <a href="https://www.tiktok.com/@ashesstarss_bot?_r=1&_t=ZS-9BasQOgIiaT" class="btn-link" target="_blank" rel="noopener">🎵 Наш TikTok</a>
+            <a href="ВСТАВЬТЕ_ССЫЛКУ_ИЗ_ТИКТОКА" class="btn-link" target="_blank" rel="noopener">🎵 Наш TikTok</a>
         </div>
         <div class="feedback-form">
             <h3>📩 Оставить обращение:</h3>
-            <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение или отзыв здесь..."></textarea>
+            
+            <!-- Выбор категории тикета -->
+            <select id="ticket-category" class="feedback-select">
+                <option value="review">⭐️ Отзывы</option>
+                <option value="admin">🚨 Вызов админа</option>
+            </select>
+
+            <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение здесь..."></textarea>
             <button type="button" id="send-btn" class="btn-submit">Отправить сообщение</button>
             <div id="status-text" class="status-msg"></div>
         </div>
@@ -139,9 +156,9 @@
     <audio id="space-ambient" loop preload="auto">
         <source src="https://soundhelix.com" type="audio/mp3">
     </audio>
-        <script>
+    <script>
         var btn = document.getElementById('send-btn');
-        var COOLDOWN_SEC = 30; // Задержка между отправками в секундах
+        var COOLDOWN_SEC = 30;
 
         function updateCooldown() {
             var lastSent = localStorage.getItem('last_msg_time');
@@ -171,8 +188,10 @@
                 if (updateCooldown()) return;
 
                 var input = document.getElementById('user-msg');
+                var categorySelect = document.getElementById('ticket-category');
                 var status = document.getElementById('status-text');
                 var text = input.value.trim();
+                var category = categorySelect ? categorySelect.value : 'review';
 
                 status.style.display = 'block';
 
@@ -189,45 +208,44 @@
 
                 fetch('/api/send', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text })
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(d) {
-                    if (d.ok) {
-                        status.style.color = '#4ade80';
-                        status.innerText = '✨ Сообщение доставлено!';
-                        input.value = '';
-                        localStorage.setItem('last_msg_time', Date.now().toString());
-                        updateCooldown();
-                    } else {
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                        status.style.color = '#ef4444';
-                        status.innerText = 'Ошибка: ' + (d.description || 'Проверьте настройки сервера');
-                    }
-                })
-                .catch(function() {
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                    status.style.color = '#ef4444';
-                    status.innerText = 'Ошибка связи с сервером.';
-                });
-            };
-        }
-
-        var a = document.getElementById('space-ambient');
-        if (a) {
-            a.volume = 0.25;
-            var p = function() {
-                a.play().catch(function(){});
-                document.removeEventListener('click', p);
-                document.removeEventListener('touchstart', p);
-            };
-            document.addEventListener('click', p);
-            document.addEventListener('touchstart', p);
-        }
-    </script>
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ text: text, category: category })
+})
+.then(function(r) { return r.json(); })
+.then(function(d) {
+if (d.ok) {
+status.style.color = '#4ade80';
+status.innerText = '✨ Сообщение доставлено!';
+input.value = '';
+localStorage.setItem('last_msg_time', Date.now().toString());
+updateCooldown();
+} else {
+btn.disabled = false;
+btn.style.opacity = '1';
+status.style.color = '#ef4444';
+status.innerText = 'Ошибка: ' + (d.description || 'Проверьте настройки сервера');
+}
+})
+.catch(function() {
+btn.disabled = false;
+btn.style.opacity = '1';
+status.style.color = '#ef4444';
+status.innerText = 'Ошибка связи с сервером.';
+});
+};
+}
+var a = document.getElementById('space-ambient');
+if (a) {
+a.volume = 0.25;
+var p = function() {
+a.play().catch(function(){});
+document.removeEventListener('click', p);
+document.removeEventListener('touchstart', p);
+};
+document.addEventListener('click', p);
+document.addEventListener('touchstart', p);
+}
+</script>
     <script defer src="/_vercel/insights/script.js"></script>
 </body>
-</html>
+</html>        
