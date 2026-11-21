@@ -55,7 +55,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ ok: false, description: 'Не настроены переменные окружения на Vercel' });
     }
 
-    const { text } = req.body || {};
+    const { text, category } = req.body || {};
 
     if (!text || text.trim().length < 2) {
         return res.status(400).json({ ok: false, description: 'Сообщение слишком короткое' });
@@ -63,9 +63,16 @@ export default async function handler(req, res) {
 
     try {
         const ticketId = Math.floor(1000000 + Math.random() * 9000000);
-        const topicTitle = `#${ticketId}`;
+        
+        // Определяем тег и заголовок в зависимости от выбранной категории
+        const isAdminCall = category === 'admin';
+        const tagPrefix = isAdminCall ? 'админ' : 'отзыв';
+        const categoryLabel = isAdminCall ? '🚨 Вызов админа' : '⭐️ Отзыв';
+        
+        const topicTitle = `#${tagPrefix}_${ticketId}`;
         const safeText = escapeHTML(text.trim().slice(0, 1000));
 
+        // 1. Создаем тему с тегом категории
         const topicRes = await tgRequest(TG_BOT_TOKEN, 'createForumTopic', {
             chat_id: TG_CHAT_ID,
             name: topicTitle
@@ -75,11 +82,12 @@ export default async function handler(req, res) {
             return res.status(200).json(topicRes);
         }
 
+        // 2. Отправляем сообщение внутрь созданной темы
         const threadId = topicRes.result.message_thread_id;
         const msgRes = await tgRequest(TG_BOT_TOKEN, 'sendMessage', {
             chat_id: TG_CHAT_ID,
             message_thread_id: threadId,
-            text: `📬 <b>Обращение ${topicTitle}</b>\n\n${safeText}`,
+            text: `📬 <b>Обращение ${topicTitle}</b>\n📌 <b>Категория:</b> ${categoryLabel}\n\n${safeText}`,
             parse_mode: 'HTML'
         });
 
