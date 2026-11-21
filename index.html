@@ -179,32 +179,25 @@
 
         var tt = document.getElementById('tiktok-btn') || document.querySelectorAll('.btn-link')[3];
         if (tt) {
+                   var tt = document.getElementById('tiktok-btn');
+        if (tt) {
             tt.onclick = function() {
                 var ua = navigator.userAgent || '';
                 var u = 'ashesstars_bot';
+                var webUrl = 'https://tiktok.com@' + u;
+
                 if (/iPad|iPhone|iPod/.test(ua)) {
                     window.location.href = 'snssdk1128://user/profile/' + u;
-                    setTimeout(function() { window.open('https://tiktok.com@' + u, '_blank'); }, 2000);
+                    setTimeout(function() { window.open(webUrl, '_blank'); }, 1500);
                 } else if (/android/i.test(ua)) {
                     window.location.href = 'intent://://tiktok.com@' + u + '#Intent;scheme=https;package=com.zhiliaoapp.musically;end;';
-                    setTimeout(function() { window.open('https://tiktok.com@' + u, '_blank'); }, 2000);
+                    setTimeout(function() { window.open(webUrl, '_blank'); }, 1500);
                 } else {
-                    window.open('https://tiktok.com@' + u, '_blank');
+                    window.open(webUrl, '_blank');
                 }
             };
         }
 
-        var a = document.getElementById('space-ambient');
-        if (a) {
-            a.volume = 0.25;
-            var p = function() {
-                a.play().catch(function(){});
-                document.removeEventListener('click', p);
-                document.removeEventListener('touchstart', p);
-            };
-            document.addEventListener('click', p);
-            document.addEventListener('touchstart', p);
-        }
     </script>
 </body>
 </html>
