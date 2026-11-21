@@ -139,65 +139,76 @@
    <audio id="space-ambient" loop preload="auto">
         <source src="https://soundhelix.com" type="audio/mp3">
     </audio>
-    <script>
-        var btn = document.getElementById('send-btn') || document.querySelector('.btn-submit');
-        if (btn) {
-            btn.onclick = function() {
-                var input = document.getElementById('user-msg');
-                var status = document.getElementById('status-text');
-                var text = input.value.trim();
-                status.style.display = 'block';
-                if (!text) {
-                    status.style.color = '#ef4444';
-                    status.innerText = 'Введите текст сообщения!';
-                    return;
-                }
-                status.style.color = '#94a3b8';
-                status.innerText = 'Отправка...';
-                fetch('/api/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text })
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(d) {
-                    if (d.ok) {
-                        status.style.color = '#4ade80';
-                        status.innerText = '✨ Сообщение доставлено!';
-                        input.value = '';
-                    } else {
-                        status.style.color = '#ef4444';
-                        status.innerText = 'Ошибка: ' + (d.description || 'Проверьте токен в api/send.js');
-                    }
-                })
-                .catch(function() {
-                    status.style.color = '#ef4444';
-                    status.innerText = 'Ошибка связи с сервером.';
-                });
-            };
-        }
+       <script>
+        function sendFeedback() {
+            var input = document.getElementById('user-msg');
+            var status = document.getElementById('status-text');
+            var text = input.value.trim();
 
-        var tt = document.getElementById('tiktok-btn') || document.querySelectorAll('.btn-link')[3];
-        if (tt) {
-                   var tt = document.getElementById('tiktok-btn');
-        if (tt) {
-            tt.onclick = function() {
-                var ua = navigator.userAgent || '';
-                var u = 'ashesstars_bot';
-                var webUrl = 'https://tiktok.com@' + u;
+            status.style.display = 'block';
 
-                if (/iPad|iPhone|iPod/.test(ua)) {
-                    window.location.href = 'snssdk1128://user/profile/' + u;
-                    setTimeout(function() { window.open(webUrl, '_blank'); }, 1500);
-                } else if (/android/i.test(ua)) {
-                    window.location.href = 'intent://://tiktok.com@' + u + '#Intent;scheme=https;package=com.zhiliaoapp.musically;end;';
-                    setTimeout(function() { window.open(webUrl, '_blank'); }, 1500);
+            if (!text) {
+                status.style.color = '#ef4444';
+                status.innerText = 'Введите текст сообщения!';
+                return;
+            }
+            
+            status.style.color = '#94a3b8';
+            status.innerText = 'Отправка...';
+
+            fetch('/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.ok) {
+                    status.style.color = '#4ade80';
+                    status.innerText = '✨ Сообщение доставлено!';
+                    input.value = '';
                 } else {
-                    window.open(webUrl, '_blank');
+                    status.style.color = '#ef4444';
+                    status.innerText = 'Ошибка: ' + (d.description || 'Проверьте настройки сервера');
                 }
-            };
+            })
+            .catch(function() {
+                status.style.color = '#ef4444';
+                status.innerText = 'Ошибка связи с сервером.';
+            });
         }
 
+        // На всякий случай привязываем кнопку отправки еще и через ID
+        var sendBtn = document.getElementById('send-btn');
+        if (sendBtn) { sendBtn.onclick = sendFeedback; }
+
+        function openTikTok() {
+            var ua = navigator.userAgent || '';
+            var u = 'ashesstars_bot';
+            var webUrl = 'https://tiktok.com@' + u;
+
+            if (/iPad|iPhone|iPod/.test(ua)) {
+                window.location.href = 'snssdk1128://user/profile/' + u;
+                setTimeout(function() { window.open(webUrl, '_blank'); }, 1500);
+            } else if (/android/i.test(ua)) {
+                window.location.href = 'intent://://tiktok.com@' + u + '#Intent;scheme=https;package=com.zhiliaoapp.musically;end;';
+                setTimeout(function() { window.open(webUrl, '_blank'); }, 1500);
+            } else {
+                window.open(webUrl, '_blank');
+            }
+        }
+
+        var audio = document.getElementById('space-ambient');
+        if (audio) {
+            audio.volume = 0.25;
+            var playAudio = function() {
+                audio.play().catch(function(){});
+                document.removeEventListener('click', playAudio);
+                document.removeEventListener('touchstart', playAudio);
+            };
+            document.addEventListener('click', playAudio);
+            document.addEventListener('touchstart', playAudio);
+        }
     </script>
 </body>
 </html>
