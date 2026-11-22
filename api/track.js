@@ -45,7 +45,6 @@ export default function handler(req, res) {
         headers: {
             'Content-Type': 'application/json',
             'apikey': SUPABASE_KEY.trim(),
-            'Authorization': `Bearer ${SUPABASE_KEY.trim()}`,
             'Prefer': 'return=minimal',
             'Content-Length': Buffer.byteLength(payload)
         }
