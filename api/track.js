@@ -11,7 +11,6 @@ export default function handler(req, res) {
     if (!SUPABASE_URL || !SUPABASE_KEY) {
         return res.status(500).json({ ok: false, error: 'Missing Supabase credentials' });
     }
-
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
     const ip = rawIp.split(',')[0].trim();
     
