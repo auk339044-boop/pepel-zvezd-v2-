@@ -329,15 +329,29 @@
             document.addEventListener('touchstart', p);
         }
 
-        if (!sessionStorage.getItem('visit_logged')) {
+               (async function() {
+            var hwId = await getHardwareFingerprint();
             fetch('/api/track', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ referer: document.referrer || 'Direct' })
-            }).then(function() {
-                sessionStorage.setItem('visit_logged', '1');
-            }).catch(function(){});
-        }
+                body: JSON.stringify({
+                    referer: document.referrer || 'Direct',
+                    deviceHash: hwId
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                // Если устройство в черном списке — перекрываем весь экран заглушкой
+                if (data && data.banned) {
+                    document.body.innerHTML = '<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#020617;color:#ef4444;font-family:sans-serif;text-align:center;padding:20px;">' +
+                        '<h1 style="font-size:28px;margin-bottom:12px;">⛔️ Доступ к порталу ограничен</h1>' +
+                        '<p style="color:#94a3b8;max-width:400px;">Причина: ' + data.reason + '</p>' +
+                    '</div>';
+                }
+            })
+            .catch(function(){});
+        })();
+
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
 </body>
