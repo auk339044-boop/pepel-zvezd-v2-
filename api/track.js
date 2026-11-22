@@ -12,9 +12,8 @@ export default function handler(req, res) {
         return res.status(500).json({ ok: false, error: 'Не заданы SUPABASE_URL или SUPABASE_KEY в Vercel' });
     }
 
-    // Исправлено: берем первый IP из списка через 
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    const ip = rawIp.split(',').trim();
+    const ip = rawIp.split(',')[0].trim();
     
     const country = req.headers['x-vercel-ip-country'] || 'Unknown';
     const city = decodeURIComponent(req.headers['x-vercel-ip-city'] || 'Unknown');
