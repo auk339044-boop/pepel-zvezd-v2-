@@ -55,9 +55,12 @@ export default async function handler(req, res) {
         return res.status(500).json({ ok: false, error: 'Missing Supabase credentials' });
     }
 
-    // Безопасное извлечение первого IP без квадратных скобок
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
     const ip = String(rawIp).split(',').shift().trim();
+    // Вычисляем подсеть IP (первые 3 блока) для связки устройств
+    const ipParts = ip.split('.');
+    const subnet = ipParts.length === 4 ? `${ipParts.shift()}.${ipParts.shift()}.${ipParts.shift()}.0/24` : ip;
+
     const country = req.headers['x-vercel-ip-country'] || 'Unknown';
     const city = decodeURIComponent(req.headers['x-vercel-ip-city'] || 'Unknown');
     const ua = req.headers['user-agent'] || 'Unknown';
@@ -65,6 +68,7 @@ export default async function handler(req, res) {
     const body = req.body || {};
     const referer = body.referer ? body.referer : (req.headers['referer'] || 'Direct');
     const deviceHash = body.deviceHash || null;
+    const isBotDetected = Boolean(body.isBot);
 
     let deviceType = 'Desktop';
     if (/iPhone|iPad|iPod/i.test(ua)) deviceType = 'iOS';
@@ -76,7 +80,7 @@ export default async function handler(req, res) {
     const apiKey = SUPABASE_KEY.trim();
 
     try {
-        // 1. Проверяем, не забанено ли устройство уже сейчас
+        // 1. Проверка прямого бана устройства
         if (deviceHash && deviceHash !== 'fp_fallback') {
             const banCheck = await httpsRequest({
                 hostname: hostname,
@@ -97,12 +101,13 @@ export default async function handler(req, res) {
             }
         }
 
-        // 2. Записываем текущий визит в таблицу visitors
+        // 2. Запись визита в базу
         const payload = JSON.stringify({
             ip_address: ip,
+            subnet: subnet,
             country: country,
             city: city,
-            device_type: deviceType,
+            device_type: isBotDetected ? 'BOT / Headless' : deviceType,
             user_agent: ua.slice(0, 250),
             referer: referer.slice(0, 250),
             device_hash: deviceHash
@@ -122,10 +127,9 @@ export default async function handler(req, res) {
             }
         }, payload);
 
-        // 3. АНАЛИЗ ПОДОЗРИТЕЛЬНОЙ АКТИВНОСТИ (AUTO-BAN)
+        // 3. КОМПЛЕКСНЫЙ АНТИФРОД: Боты + Флуд + Кросс-браузерная связка (Твинки)
         if (deviceHash && deviceHash !== 'fp_fallback') {
             const now = Date.now();
-            
             const memRecord = burstMap.get(deviceHash) || { count: 0, windowStart: now };
             if (now - memRecord.windowStart > 60 * 1000) {
                 memRecord.count = 1;
@@ -136,34 +140,67 @@ export default async function handler(req, res) {
             burstMap.set(deviceHash, memRecord);
 
             const tenMinsAgo = new Date(now - 10 * 60 * 1000).toISOString();
-            const historyRes = await httpsRequest({
-                hostname: hostname,
-                port: 443,
-                path: `/rest/v1/visitors?device_hash=eq.${encodeURIComponent(deviceHash)}&created_at=gte.${encodeURIComponent(tenMinsAgo)}&select=ip_address,created_at`,
-                method: 'GET',
-                family: 4,
-                headers: { 'apikey': apiKey }
-            });
+            
+            // Запрашиваем историю как по device_hash, так и по текущему IP (для поиска твинков из других браузеров)
+            const [historyRes, ipClusterRes] = await Promise.all([
+                httpsRequest({
+                    hostname: hostname,
+                    port: 443,
+                    path: `/rest/v1/visitors?device_hash=eq.${encodeURIComponent(deviceHash)}&created_at=gte.${encodeURIComponent(tenMinsAgo)}&select=ip_address,created_at`,
+                    method: 'GET',
+                    family: 4,
+                    headers: { 'apikey': apiKey }
+                }),
+                httpsRequest({
+                    hostname: hostname,
+                    port: 443,
+                    path: `/rest/v1/visitors?ip_address=eq.${encodeURIComponent(ip)}&created_at=gte.${encodeURIComponent(tenMinsAgo)}&select=device_hash`,
+                    method: 'GET',
+                    family: 4,
+                    headers: { 'apikey': apiKey }
+                })
+            ]);
 
-            let dbVisitsLastMinute = 0;
-            let uniqueIpsLast10Mins = 1;
-
-            if (Array.isArray(historyRes.data)) {
-                const oneMinAgo = now - 60 * 1000;
-                dbVisitsLastMinute = historyRes.data.filter(v => new Date(v.created_at).getTime() > oneMinAgo).length;
-                uniqueIpsLast10Mins = new Set(historyRes.data.map(v => v.ip_address)).size;
-            }
-
-            const totalVisitsPerMin = Math.max(memRecord.count, dbVisitsLastMinute);
             let autoBanReason = null;
 
-            // Порог: более 6 обновлений за 1 минуту
-            if (totalVisitsPerMin > 6) {
-                autoBanReason = `Авто-бан: флуд запросами (${totalVisitsPerMin} визитов/мин)`;
+            // Правило А: Обнаружен эмулятор / Selenium / Puppeteer / Headless Chrome
+            if (isBotDetected || /HeadlessChrome|PhantomJS|Selenium|Puppeteer|bot|crawl|spider/i.test(ua)) {
+                autoBanReason = 'Авто-бан: обнаружен автоматический бот / эмулятор';
             }
-            // Порог: смена 4 и более разных IP за 10 минут
-            else if (uniqueIpsLast10Mins >= 4) {
-                autoBanReason = `Авто-бан: аномальная смена IP/VPN (${uniqueIpsLast10Mins} адресов)`;
+
+            // Правило Б: Флуд обновлениями страницы (> 15 раз в минуту)
+            if (!autoBanReason && Array.isArray(historyRes.data)) {
+                const oneMinAgo = now - 60 * 1000;
+                const dbVisitsLastMinute = historyRes.data.filter(v => new Date(v.created_at).getTime() > oneMinAgo).length;
+                const totalVisitsPerMin = Math.max(memRecord.count, dbVisitsLastMinute);
+                const uniqueIps = new Set(historyRes.data.map(v => v.ip_address)).size;
+
+                if (totalVisitsPerMin > 15) {
+                    autoBanReason = `Авто-бан: флуд запросами (${totalVisitsPerMin} визитов/мин)`;
+                } else if (uniqueIps >= 4) {
+                    autoBanReason = `Авто-бан: аномальная смена VPN/IP (${uniqueIps} адресов)`;
+                }
+            }
+
+            // Правило В: Кросс-браузерная связка (обход бана через другой браузер с того же IP)
+            if (!autoBanReason && Array.isArray(ipClusterRes.data)) {
+                const linkedHashes = [...new Set(ipClusterRes.data.map(r => r.device_hash).filter(h => h && h !== deviceHash))];
+                if (linkedHashes.length > 0) {
+                    // Проверяем, не забанен ли хоть один из связанных браузеров с этого IP
+                    const linkedQuery = linkedHashes.map(h => encodeURIComponent(h)).join(',');
+                    const clusterBanCheck = await httpsRequest({
+                        hostname: hostname,
+                        port: 443,
+                        path: `/rest/v1/banned_devices?device_hash=in.(${linkedQuery})&select=device_hash`,
+                        method: 'GET',
+                        family: 4,
+                        headers: { 'apikey': apiKey }
+                    });
+
+                    if (Array.isArray(clusterBanCheck.data) && clusterBanCheck.data.length > 0) {
+                        autoBanReason = 'Авто-бан: попытка обхода блокировки через другой браузер';
+                    }
+                }
             }
 
             if (autoBanReason) {
@@ -189,7 +226,7 @@ export default async function handler(req, res) {
                 await sendTelegramAlert(
                     TG_BOT_TOKEN,
                     OWNER_TG_ID,
-                    `🤖 <b>Сработал Auto-Ban!</b>\n🖥 <b>Hardware ID:</b> <code>${deviceHash}</code>\n⚠️ <b>Причина:</b> ${autoBanReason}\n🌍 <b>Последний IP:</b> <code>${ip}</code> (${country}, ${city})`
+                    `🤖 <b>Сработал Auto-Ban!</b>\n🖥 <b>Hardware ID:</b> <code>${deviceHash}</code>\n⚠️ <b>Причина:</b> ${autoBanReason}\n🌍 <b>IP:</b> <code>${ip}</code> (${country}, ${city})`
                 );
 
                 return res.status(200).json({ ok: true, banned: true, reason: autoBanReason });
