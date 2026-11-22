@@ -33,9 +33,8 @@ export default function handler(req, res) {
         referer: referer.slice(0, 250)
     });
 
-   const cleanBaseUrl = SUPABASE_URL.trim().replace(/\/+$/, '');
-const parsedUrl = new URL(`${cleanBaseUrl}/rest/v1/visitors`);
-
+  const baseOrigin = new URL(SUPABASE_URL.trim()).origin;
+const parsedUrl = new URL(`${baseOrigin}/rest/v1/visitors`);
 
     const options = {
         hostname: parsedUrl.hostname,
