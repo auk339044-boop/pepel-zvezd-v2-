@@ -299,7 +299,7 @@
             });
         }
 
-        function loadAdminStats() {
+              function loadAdminStats() {
             var passInput = document.getElementById('admin-pass-input').value;
             if (passInput) currentAdminPass = passInput;
             var errEl = document.getElementById('admin-auth-err');
@@ -310,11 +310,29 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: currentAdminPass, action: 'stats' })
             })
-            .then(function(r) { return r.json(); })
+            .then(async function(r) {
+                var text = await r.text();
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    throw new Error('HTTP ' + r.status + ': ' + text.slice(0, 100));
+                }
+            })
             .then(function(data) {
                 if (!data.ok) {
                     errEl.innerText = data.error || 'Ошибка доступа';
                     return;
+                }
+                errEl.innerText = '';
+                document.getElementById('admin-auth-box').style.display = 'none';
+                document.getElementById('admin-content-box').style.display = 'block';
+                renderAdminDevices(data.devices || []);
+            })
+            .catch(function(err) {
+                errEl.innerText = 'Детали сбоя: ' + err.message;
+            });
+        }
+
                 }
                 errEl.innerText = '';
                 document.getElementById('admin-auth-box').style.display = 'none';
