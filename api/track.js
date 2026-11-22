@@ -49,21 +49,25 @@ export default function handler(req, res) {
         }
     };
 
-    const dbReq = https.request(options, (dbRes) => {
+        const dbReq = https.request(options, (dbRes) => {
         let respData = '';
         dbRes.on('data', (chunk) => { respData += chunk; });
         dbRes.on('end', () => {
             if (dbRes.statusCode >= 200 && dbRes.statusCode < 300) {
+                console.log('Supabase OK');
                 res.status(200).json({ ok: true });
             } else {
+                console.error('Supabase Error:', dbRes.statusCode, respData);
                 res.status(dbRes.statusCode).json({ ok: false, details: respData });
             }
         });
     });
 
     dbReq.on('error', (err) => {
+        console.error('Network Error:', err.message);
         res.status(500).json({ ok: false, error: err.message });
     });
+
 
     dbReq.write(payload);
     dbReq.end();
