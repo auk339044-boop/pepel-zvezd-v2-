@@ -197,13 +197,51 @@
     <audio id="space-ambient" loop preload="auto">
         <source src="https://soundhelix.com" type="audio/mp3">
     </audio>
-       <script>
+          <!-- Скрытое модальное окно панели администратора -->
+    <div id="admin-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(2,6,23,0.92); backdrop-filter:blur(10px); z-index:9999; overflow-y:auto; padding:20px; text-align:left; color:#f8fafc;">
+        <div style="max-width:650px; margin:0 auto; background:rgba(15,23,42,0.9); border:1px solid rgba(192,132,252,0.3); border-radius:20px; padding:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="font-size:20px; color:#e9d5ff;">🛡 Центр управления БД и банами</h2>
+                <button onclick="document.getElementById('admin-modal').style.display='none'" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">✕</button>
+            </div>
+            
+            <div id="admin-auth-box">
+                <input type="password" id="admin-pass-input" placeholder="Введите ADMIN_PASSWORD..." style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:#0b0f19; color:#fff; margin-bottom:12px;">
+                <button onclick="loadAdminStats()" style="width:100%; padding:12px; border-radius:10px; border:none; background:#a855f7; color:#0b0f19; font-weight:700; cursor:pointer;">Войти в панель</button>
+                <div id="admin-auth-err" style="color:#ef4444; font-size:13px; margin-top:8px;"></div>
+            </div>
+
+            <div id="admin-content-box" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                    <span style="font-size:13px; color:#94a3b8;">Последние устройства (Кластеры и Баны):</span>
+                    <button onclick="loadAdminStats()" style="padding:6px 12px; border-radius:8px; border:1px solid #c084fc; background:transparent; color:#e9d5ff; font-size:12px; cursor:pointer;">🔄 Обновить</button>
+                </div>
+                <div id="admin-devices-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
         var btn = document.getElementById('send-btn');
         var COOLDOWN_SEC = 30;
+        var currentAdminPass = '';
 
+        // 1. Детектор эмуляторов, Selenium, Puppeteer и ботов
+        function detectAutomationBot() {
+            try {
+                if (navigator.webdriver) return true;
+                if (window.document.documentElement.getAttribute('webdriver')) return true;
+                if (!navigator.languages || navigator.languages.length === 0) return true;
+                if (window.outerWidth === 0 && window.outerHeight === 0) return true;
+                return false;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // 2. Генератор отпечатка железа (Canvas + WebGL + SHA-256)
         async function getHardwareFingerprint() {
             try {
-                // 1. Canvas Fingerprint
                 var canvas = document.createElement('canvas');
                 var ctx = canvas.getContext('2d');
                 ctx.textBaseline = 'top';
@@ -214,12 +252,10 @@
                 ctx.fillText('PepelZvezd_HW_ID', 2, 15);
                 var canvasData = canvas.toDataURL();
 
-                // 2. WebGL GPU Renderer
                 var gl = document.createElement('canvas').getContext('webgl');
                 var debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
                 var gpu = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'unknown_gpu';
 
-                // 3. Аппаратные параметры устройства
                 var rawSignals = [
                     canvasData,
                     gpu,
@@ -229,7 +265,6 @@
                     Intl.DateTimeFormat().resolvedOptions().timeZone
                 ].join('|||');
 
-                // 4. Криптографическое хэширование SHA-256
                 var msgBuffer = new TextEncoder().encode(rawSignals);
                 var hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
                 var hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -240,6 +275,101 @@
             }
         }
 
+        // 3. Активация скрытой админки (кодовое слово "root" на клавиатуре или 5 кликов по звезде)
+        var keyBuffer = '';
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+            keyBuffer = (keyBuffer + e.key.toLowerCase()).slice(-4);
+            if (keyBuffer === 'root') {
+                document.getElementById('admin-modal').style.display = 'block';
+            }
+        });
+
+        var starClicks = 0;
+        var starEl = document.querySelector('.profile-star');
+        if (starEl) {
+            starEl.style.cursor = 'pointer';
+            starEl.addEventListener('click', function() {
+                starClicks++;
+                if (starClicks >= 5) {
+                    starClicks = 0;
+                    document.getElementById('admin-modal').style.display = 'block';
+                }
+                setTimeout(function() { starClicks = 0; }, 2500);
+            });
+        }
+
+        function loadAdminStats() {
+            var passInput = document.getElementById('admin-pass-input').value;
+            if (passInput) currentAdminPass = passInput;
+            var errEl = document.getElementById('admin-auth-err');
+            errEl.innerText = 'Загрузка...';
+
+            fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: currentAdminPass, action: 'stats' })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.ok) {
+                    errEl.innerText = data.error || 'Ошибка доступа';
+                    return;
+                }
+                errEl.innerText = '';
+                document.getElementById('admin-auth-box').style.display = 'none';
+                document.getElementById('admin-content-box').style.display = 'block';
+                renderAdminDevices(data.devices || []);
+            })
+            .catch(function() { errEl.innerText = 'Ошибка сети'; });
+        }
+
+        function renderAdminDevices(devices) {
+            var list = document.getElementById('admin-devices-list');
+            list.innerHTML = '';
+            if (devices.length === 0) {
+                list.innerHTML = '<div style="color:#64748b;font-size:13px;">Записей пока нет</div>';
+                return;
+            }
+            devices.forEach(function(d) {
+                var ips = Array.isArray(d.used_ips) ? d.used_ips.join(', ') : '';
+                var locs = Array.isArray(d.locations) ? d.locations.join(' | ') : '';
+                var card = document.createElement('div');
+                card.style.cssText = 'background:rgba(30,41,59,0.5); border:1px solid ' + (d.is_banned ? '#ef4444' : 'rgba(255,255,255,0.08)') + '; border-radius:12px; padding:12px; font-size:12px;';
+                
+                var actionBtn = d.is_banned
+                    ? '<button onclick="toggleDeviceBan(\'' + d.device_hash + '\', \'unban\')" style="background:#22c55e;color:#020617;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;">Разбанить</button>'
+                    : '<button onclick="toggleDeviceBan(\'' + d.device_hash + '\', \'ban\')" style="background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;">⛔️ Бан железа</button>';
+
+                card.innerHTML =
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+                        '<strong style="color:#e9d5ff;font-family:monospace;font-size:13px;">' + d.device_hash + '</strong>' +
+                        actionBtn +
+                    '</div>' +
+                    '<div style="color:#94a3b8;line-height:1.5;">' +
+                        '📱 <b>Устройство:</b> ' + (d.device || 'Unknown') + ' | 👁 <b>Визитов:</b> ' + d.total_visits + '<br>' +
+                        '🌍 <b>Локации:</b> ' + locs + '<br>' +
+                        '🌐 <b>Кластер IP:</b> <span style="font-family:monospace;">' + ips + '</span>' +
+                        (d.is_banned ? '<br><span style="color:#f87171;">⚠️ Причина бана: ' + (d.ban_reason || '') + '</span>' : '') +
+                    '</div>';
+                list.appendChild(card);
+            });
+        }
+
+        function toggleDeviceBan(hash, actionType) {
+            fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    password: currentAdminPass,
+                    action: actionType,
+                    deviceHash: hash,
+                    reason: 'Заблокирован администратором из панели'
+                })
+            }).then(function() { loadAdminStats(); });
+        }
+
+        // 4. Таймер антиспама
         function updateCooldown() {
             var lastSent = localStorage.getItem('last_msg_time');
             if (!lastSent || !btn) return false;
@@ -249,110 +379,102 @@
                 btn.disabled = true;
                 btn.style.opacity = '0.5';
                 btn.style.cursor = 'not-allowed';
-                btn.innerText = 'Подождите ' + left + ' сек...';
-                setTimeout(updateCooldown, 1000);
-                return true;
-            } else {
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                btn.style.cursor = 'pointer';
-                btn.innerText = 'Отправить сообщение';
-                return false;
-            }
-        }
-
-        updateCooldown();
-
-        if (btn) {
-            btn.onclick = async function() {
-                if (updateCooldown()) return;
-
-                var input = document.getElementById('user-msg');
-                var categorySelect = document.getElementById('ticket-category');
-                var status = document.getElementById('status-text');
-                var text = input.value.trim();
-                var category = categorySelect ? categorySelect.value : 'review';
-
-                status.style.display = 'block';
-
-                if (text.length < 2) {
-                    status.style.color = '#ef4444';
-                    status.innerText = 'Введите текст сообщения (минимум 2 символа)!';
-                    return;
-                }
-
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-                status.style.color = '#94a3b8';
-                status.innerText = 'Отправка...';
-
-                var hwId = await getHardwareFingerprint();
-
-                fetch('/api/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text, category: category, deviceHash: hwId })
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(d) {
-                    if (d.ok) {
-                        status.style.color = '#4ade80';
-                        status.innerText = '✨ Сообщение доставлено!';
-                        input.value = '';
-                        localStorage.setItem('last_msg_time', Date.now().toString());
-                        updateCooldown();
-                    } else {
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                        status.style.color = '#ef4444';
-                        status.innerText = 'Ошибка: ' + (d.description || 'Проверьте настройки сервера');
-                    }
-                })
-                .catch(function() {
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                    status.style.color = '#ef4444';
-                    status.innerText = 'Ошибка связи с сервером.';
-                });
-            };
-        }
-
-        var a = document.getElementById('space-ambient');
-        if (a) {
-            a.volume = 0.25;
-            var p = function() {
-                a.play().catch(function(){});
-                document.removeEventListener('click', p);
-                document.removeEventListener('touchstart', p);
-            };
-            document.addEventListener('click', p);
-            document.addEventListener('touchstart', p);
-        }
-
-               (async function() {
-            var hwId = await getHardwareFingerprint();
-            fetch('/api/track', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    referer: document.referrer || 'Direct',
-                    deviceHash: hwId
-                })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                // Если устройство в черном списке — перекрываем весь экран заглушкой
-                if (data && data.banned) {
-                    document.body.innerHTML = '<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#020617;color:#ef4444;font-family:sans-serif;text-align:center;padding:20px;">' +
-                        '<h1 style="font-size:28px;margin-bottom:12px;">⛔️ Доступ к порталу ограничен</h1>' +
-                        '<p style="color:#94a3b8;max-width:400px;">Причина: ' + data.reason + '</p>' +
-                    '</div>';
-                }
-            })
-            .catch(function(){});
-        })();
-
-    </script>
+btn.innerText = 'Подождите ' + left + ' сек...';
+setTimeout(updateCooldown, 1000);
+return true;
+} else {
+btn.disabled = false;
+btn.style.opacity = '1';
+btn.style.cursor = 'pointer';
+btn.innerText = 'Отправить сообщение';
+return false;
+}
+}
+updateCooldown();
+if (btn) {
+btn.onclick = async function() {
+if (updateCooldown()) return;
+var input = document.getElementById('user-msg');
+var categorySelect = document.getElementById('ticket-category');
+var status = document.getElementById('status-text');
+var text = input.value.trim();
+var category = categorySelect ? categorySelect.value : 'review';
+status.style.display = 'block';
+if (text.length < 2) {
+status.style.color = '#ef4444';
+status.innerText = 'Введите текст сообщения (минимум 2 символа)!';
+return;
+}
+btn.disabled = true;
+btn.style.opacity = '0.5';
+status.style.color = '#94a3b8';
+status.innerText = 'Отправка...';
+var hwId = await getHardwareFingerprint();
+fetch('/api/send', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ text: text, category: category, deviceHash: hwId })
+})
+.then(function(r) { return r.json(); })
+.then(function(d) {
+if (d.ok) {
+status.style.color = '#4ade80';
+status.innerText = '✨ Сообщение доставлено!';
+input.value = '';
+localStorage.setItem('last_msg_time', Date.now().toString());
+updateCooldown();
+} else {
+btn.disabled = false;
+btn.style.opacity = '1';
+status.style.color = '#ef4444';
+status.innerText = 'Ошибка: ' + (d.description || 'Проверьте настройки сервера');
+}
+})
+.catch(function() {
+btn.disabled = false;
+btn.style.opacity = '1';
+status.style.color = '#ef4444';
+status.innerText = 'Ошибка связи с сервером.';
+});
+};
+}
+// 5. Фоновый эмбиент
+var a = document.getElementById('space-ambient');
+if (a) {
+a.volume = 0.25;
+var p = function() {
+a.play().catch(function(){});
+document.removeEventListener('click', p);
+document.removeEventListener('touchstart', p);
+};
+document.addEventListener('click', p);
+document.addEventListener('touchstart', p);
+}
+// 6. Телеметрия визита + проверка бана и детектор ботов
+(async function() {
+var hwId = await getHardwareFingerprint();
+var isBot = detectAutomationBot();
+fetch('/api/track', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+referer: document.referrer || 'Direct',
+deviceHash: hwId,
+isBot: isBot
+})
+})
+.then(function(r) { return r.json(); })
+.then(function(data) {
+if (data && data.banned) {
+document.body.innerHTML = '' +
+'⛔️ Доступ к порталу ограничен' +
+'Причина: ' + data.reason + '' +
+'';
+}
+})
+.catch(function(){});
+})();
+</script>
     <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
