@@ -9,17 +9,18 @@ export default function handler(req, res) {
     const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_KEY) {
-        return res.status(500).json({ error: 'Database credentials missing' });
+        return res.status(500).json({ ok: false, error: 'Не заданы SUPABASE_URL или SUPABASE_KEY в Vercel' });
     }
 
-    // Извлекаем данные из заголовков Vercel и браузера
-    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+    // Исправлено: берем первый IP из списка через 
+    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+    const ip = rawIp.split(',').trim();
+    
     const country = req.headers['x-vercel-ip-country'] || 'Unknown';
     const city = decodeURIComponent(req.headers['x-vercel-ip-city'] || 'Unknown');
     const ua = req.headers['user-agent'] || 'Unknown';
     const referer = (req.body && req.body.referer) ? req.body.referer : (req.headers['referer'] || 'Direct');
 
-    // Простой парсинг типа устройства
     let deviceType = 'Desktop';
     if (/iPhone|iPad|iPod/i.test(ua)) deviceType = 'iOS';
     else if (/Android/i.test(ua)) deviceType = 'Android';
@@ -34,7 +35,7 @@ export default function handler(req, res) {
         referer: referer.slice(0, 250)
     });
 
-    const parsedUrl = new URL(`${SUPABASE_URL}/rest/v1/visitors`);
+    const parsedUrl = new URL(`${SUPABASE_URL.trim()}/rest/v1/visitors`);
 
     const options = {
         hostname: parsedUrl.hostname,
@@ -44,19 +45,27 @@ export default function handler(req, res) {
         family: 4,
         headers: {
             'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'apikey': SUPABASE_KEY.trim(),
+            'Authorization': `Bearer ${SUPABASE_KEY.trim()}`,
             'Prefer': 'return=minimal',
             'Content-Length': Buffer.byteLength(payload)
         }
     };
 
     const dbReq = https.request(options, (dbRes) => {
-        res.status(200).json({ ok: dbRes.statusCode >= 200 && dbRes.statusCode < 300 });
+        let respData = '';
+        dbRes.on('data', (chunk) => { respData += chunk; });
+        dbRes.on('end', () => {
+            if (dbRes.statusCode >= 200 && dbRes.statusCode < 300) {
+                res.status(200).json({ ok: true });
+            } else {
+                res.status(dbRes.statusCode).json({ ok: false, details: respData });
+            }
+        });
     });
 
-    dbReq.on('error', () => {
-        res.status(500).json({ ok: false });
+    dbReq.on('error', (err) => {
+        res.status(500).json({ ok: false, error: err.message });
     });
 
     dbReq.write(payload);
