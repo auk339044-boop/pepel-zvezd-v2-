@@ -279,6 +279,16 @@ document.removeEventListener('touchstart', p);
 document.addEventListener('click', p);
 document.addEventListener('touchstart', p);
 }
+         if (!sessionStorage.getItem('visit_logged')) {
+            fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ referer: document.referrer || 'Direct' })
+            }).then(function() {
+                sessionStorage.setItem('visit_logged', '1');
+            }).catch(function(){});
+        }
+       
 </script>
     <script defer src="/_vercel/insights/script.js"></script>
 </body>
