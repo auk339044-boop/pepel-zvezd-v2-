@@ -7,9 +7,9 @@ function httpsRequest(options, payloadStr = null) {
             res.on('data', (chunk) => { data += chunk; });
             res.on('end', () => {
                 try {
-                    resolve({ status: res.statusCode, data: data ? JSON.parse(data) : {} });
+                    resolve({ status: res.statusCode, raw: data, data: data ? JSON.parse(data) : {} });
                 } catch (e) {
-                    resolve({ status: res.statusCode, data: {} });
+                    resolve({ status: res.statusCode, raw: data, data: {} });
                 }
             });
         });
@@ -20,6 +20,8 @@ function httpsRequest(options, payloadStr = null) {
 }
 
 export default async function handler(req, res) {
+    res.setHeader('Content-Type', 'application/json');
+
     if (req.method !== 'POST') {
         return res.status(405).json({ ok: false, error: 'Method not allowed' });
     }
@@ -28,22 +30,30 @@ export default async function handler(req, res) {
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
-    if (!ADMIN_PASSWORD || !SUPABASE_URL || !SUPABASE_KEY) {
-        return res.status(500).json({ ok: false, error: 'Не задан ADMIN_PASSWORD в Vercel' });
+    if (!ADMIN_PASSWORD) {
+        return res.status(500).json({ ok: false, error: 'В Vercel не задана переменная ADMIN_PASSWORD' });
+    }
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+        return res.status(500).json({ ok: false, error: 'В Vercel не заданы ключи SUPABASE' });
     }
 
-    const { password, action, deviceHash, reason } = req.body || {};
+    let body = req.body;
+    if (typeof body === 'string') {
+        try { body = JSON.parse(body); } catch (e) { body = {}; }
+    }
+    body = body || {};
 
-    if (!password || password.trim() !== ADMIN_PASSWORD.trim()) {
+    const { password, action, deviceHash, reason } = body;
+
+    if (!password || String(password).trim() !== String(ADMIN_PASSWORD).trim()) {
         return res.status(401).json({ ok: false, error: 'Неверный пароль администратора' });
     }
 
-    const baseOrigin = new URL(SUPABASE_URL.trim()).origin;
-    const hostname = new URL(baseOrigin).hostname;
-    const apiKey = SUPABASE_KEY.trim();
-
     try {
-        // 1. Загрузка аналитики и списка устройств
+        const baseOrigin = new URL(SUPABASE_URL.trim()).origin;
+        const hostname = new URL(baseOrigin).hostname;
+        const apiKey = SUPABASE_KEY.trim();
+
         if (action === 'stats') {
             const analyticsRes = await httpsRequest({
                 hostname: hostname,
@@ -54,16 +64,22 @@ export default async function handler(req, res) {
                 headers: { 'apikey': apiKey }
             });
 
+            if (analyticsRes.status >= 400) {
+                return res.status(200).json({
+                    ok: false,
+                    error: 'Ошибка Supabase (' + analyticsRes.status + '): ' + analyticsRes.raw
+                });
+            }
+
             return res.status(200).json({
                 ok: true,
                 devices: Array.isArray(analyticsRes.data) ? analyticsRes.data : []
             });
         }
 
-        // 2. Мгновенный бан устройства (или всех связанных устройств в кластере)
         if (action === 'ban' && deviceHash) {
             const payload = JSON.stringify({
-                device_hash: deviceHash.trim(),
+                device_hash: String(deviceHash).trim(),
                 reason: reason || 'Заблокирован через панель управления'
             });
 
@@ -84,12 +100,11 @@ export default async function handler(req, res) {
             return res.status(200).json({ ok: true });
         }
 
-        // 3. Разбан устройства
         if (action === 'unban' && deviceHash) {
             await httpsRequest({
                 hostname: hostname,
                 port: 443,
-                path: `/rest/v1/banned_devices?device_hash=eq.${encodeURIComponent(deviceHash.trim())}`,
+                path: `/rest/v1/banned_devices?device_hash=eq.${encodeURIComponent(String(deviceHash).trim())}`,
                 method: 'DELETE',
                 family: 4,
                 headers: { 'apikey': apiKey }
@@ -100,6 +115,6 @@ export default async function handler(req, res) {
 
         return res.status(400).json({ ok: false, error: 'Неизвестная команда' });
     } catch (err) {
-        return res.status(500).json({ ok: false, error: err.message });
+        return res.status(500).json({ ok: false, error: 'Сбой сервера: ' + err.message });
     }
 }
