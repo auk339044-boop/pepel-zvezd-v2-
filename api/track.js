@@ -1,6 +1,5 @@
 import https from 'https';
 
-// Быстрый счетчик в оперативной памяти для мгновенного отлова серии F5
 const burstMap = new Map();
 
 function httpsRequest(options, payloadStr = null) {
@@ -56,9 +55,9 @@ export default async function handler(req, res) {
         return res.status(500).json({ ok: false, error: 'Missing Supabase credentials' });
     }
 
-    // Исправлено: берем первый IP из списка через 
+    // Безопасное извлечение первого IP без квадратных скобок
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    const ip = rawIp.split(',').trim();
+    const ip = String(rawIp).split(',').shift().trim();
     const country = req.headers['x-vercel-ip-country'] || 'Unknown';
     const city = decodeURIComponent(req.headers['x-vercel-ip-city'] || 'Unknown');
     const ua = req.headers['user-agent'] || 'Unknown';
@@ -89,10 +88,11 @@ export default async function handler(req, res) {
             });
 
             if (Array.isArray(banCheck.data) && banCheck.data.length > 0) {
+                const firstBan = banCheck.data.shift();
                 return res.status(200).json({
                     ok: true,
                     banned: true,
-                    reason: banCheck.data.reason || 'Доступ ограничен администрацией'
+                    reason: firstBan.reason || 'Доступ ограничен администрацией'
                 });
             }
         }
@@ -126,7 +126,6 @@ export default async function handler(req, res) {
         if (deviceHash && deviceHash !== 'fp_fallback') {
             const now = Date.now();
             
-            // Мгновенный подсчет в памяти сервера (на случай быстрых F5)
             const memRecord = burstMap.get(deviceHash) || { count: 0, windowStart: now };
             if (now - memRecord.windowStart > 60 * 1000) {
                 memRecord.count = 1;
@@ -136,7 +135,6 @@ export default async function handler(req, res) {
             }
             burstMap.set(deviceHash, memRecord);
 
-            // Проверка истории из базы данных за 10 минут (на случай смены VPN/IP)
             const tenMinsAgo = new Date(now - 10 * 60 * 1000).toISOString();
             const historyRes = await httpsRequest({
                 hostname: hostname,
@@ -159,11 +157,11 @@ export default async function handler(req, res) {
             const totalVisitsPerMin = Math.max(memRecord.count, dbVisitsLastMinute);
             let autoBanReason = null;
 
-            // Правило 1: Более 15 обновлений страницы за 1 минуту
-            if (totalVisitsPerMin > 15) {
+            // Порог: более 6 обновлений за 1 минуту
+            if (totalVisitsPerMin > 6) {
                 autoBanReason = `Авто-бан: флуд запросами (${totalVisitsPerMin} визитов/мин)`;
             }
-            // Правило 2: Смена 4 и более разных IP за 10 минут (перебор VPN/прокси)
+            // Порог: смена 4 и более разных IP за 10 минут
             else if (uniqueIpsLast10Mins >= 4) {
                 autoBanReason = `Авто-бан: аномальная смена IP/VPN (${uniqueIpsLast10Mins} адресов)`;
             }
