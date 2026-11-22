@@ -1,10 +1,9 @@
 import https from 'https';
 
-// Хранилище в оперативной памяти сервера для отслеживания частоты запросов по IP
 const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // Окно времени: 1 минута
-const MAX_REQUESTS_PER_WINDOW = 2;      // Максимум 2 обращения в минуту с одного IP
-const MIN_INTERVAL_MS = 20 * 1000;      // Минимум 20 секунд между запросами
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 2;
+const MIN_INTERVAL_MS = 20 * 1000;
 
 let lastMessageText = '';
 
@@ -44,34 +43,29 @@ function tgRequest(token, method, payload) {
 function escapeHTML(str) {
     return str.replace(/[&<>'"]/g, tag => ({
         '&': '&amp;',
-       const origin = req.headers.origin || '';
-const referer = req.headers.referer || '';
-const currentHost = req.headers.host || 'pepel-zvezd-v2.vercel.app';
-
-if ((origin && !origin.includes(currentHost)) && (referer && !referer.includes(currentHost))) {
-    return res.status(403).json({ ok: false, description: 'Доступ запрещен (Invalid Origin)' });
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+    }[tag]));
 }
 
 export default async function handler(req, res) {
-    // 1. Разрешаем только POST-запросы
     if (req.method !== 'POST') {
         return res.status(405).json({ ok: false, description: 'Method not allowed' });
     }
 
-    // 2. Проверка Origin/Referer (отсекаем прямые скрипты и curl-запросы)
+    // Разрешаем запросы только с доменов Vercel (отсекаем сторонние сайты)
     const origin = req.headers.origin || '';
-    const referer = req.headers.referer || '';
-    const allowedDomain = 'pepel-zvezd-v2.vercel.app';
-    
-    if (!origin.includes(allowedDomain) && !referer.includes(allowedDomain)) {
-        return res.status(403).json({ ok: false, description: 'Доступ запрещен (Invalid Origin)' });
+    if (origin && !origin.includes('.vercel.app') && !origin.includes('localhost')) {
+        return res.status(403).json({ ok: false, description: 'Доступ запрещен' });
     }
 
-    // 3. Серверный Rate Limiting по IP-адресу (защита от L7 DDoS и флуда)
-    const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+    // Серверный Rate Limiting по IP-адресу
+    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+    const clientIp = rawIp.split(',')[0].trim();
     const now = Date.now();
 
-    // Очищаем старые записи, чтобы не забивать оперативную память при атаке с разных IP
     if (rateLimitMap.size > 1000) {
         rateLimitMap.clear();
     }
@@ -83,7 +77,6 @@ export default async function handler(req, res) {
     }
 
     if (now - userRecord.firstRequestTime > RATE_LIMIT_WINDOW_MS) {
-        // Сбрасываем счетчик, если прошла минута
         userRecord.count = 1;
         userRecord.firstRequestTime = now;
     } else {
@@ -95,15 +88,13 @@ export default async function handler(req, res) {
     userRecord.lastRequestTime = now;
     rateLimitMap.set(clientIp, userRecord);
 
-    // 4. Проверка переменных окружения
     const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN;
     const TG_CHAT_ID = process.env.TG_CHAT_ID;
 
     if (!TG_BOT_TOKEN || !TG_CHAT_ID) {
-        return res.status(500).json({ ok: false, description: 'Ошибка конфигурации сервера' });
+        return res.status(500).json({ ok: false, description: 'Не настроены переменные окружения на Vercel' });
     }
 
-    // 5. Валидация тела запроса и защита от дубликатов
     const { text, category } = req.body || {};
 
     if (!text || typeof text !== 'string' || text.trim().length < 2) {
