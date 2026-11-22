@@ -44,11 +44,12 @@ function tgRequest(token, method, payload) {
 function escapeHTML(str) {
     return str.replace(/[&<>'"]/g, tag => ({
         '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        "'": '&#39;',
-        '"': '&quot;'
-    }[tag]));
+       const origin = req.headers.origin || '';
+const referer = req.headers.referer || '';
+const currentHost = req.headers.host || 'pepel-zvezd-v2.vercel.app';
+
+if ((origin && !origin.includes(currentHost)) && (referer && !referer.includes(currentHost))) {
+    return res.status(403).json({ ok: false, description: 'Доступ запрещен (Invalid Origin)' });
 }
 
 export default async function handler(req, res) {
