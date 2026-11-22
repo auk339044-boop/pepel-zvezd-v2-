@@ -1,5 +1,8 @@
 import https from 'https';
 
+// Быстрый счетчик в оперативной памяти для мгновенного отлова серии F5
+const burstMap = new Map();
+
 function httpsRequest(options, payloadStr = null) {
     return new Promise((resolve, reject) => {
         const req = https.request(options, (res) => {
@@ -53,8 +56,9 @@ export default async function handler(req, res) {
         return res.status(500).json({ ok: false, error: 'Missing Supabase credentials' });
     }
 
+    // Исправлено: берем первый IP из списка через 
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    const ip = rawIp.split(',')[0].trim();
+    const ip = rawIp.split(',').trim();
     const country = req.headers['x-vercel-ip-country'] || 'Unknown';
     const city = decodeURIComponent(req.headers['x-vercel-ip-city'] || 'Unknown');
     const ua = req.headers['user-agent'] || 'Unknown';
@@ -88,7 +92,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     ok: true,
                     banned: true,
-                    reason: banCheck.data[0].reason || 'Доступ ограничен администрацией'
+                    reason: banCheck.data.reason || 'Доступ ограничен администрацией'
                 });
             }
         }
@@ -120,7 +124,20 @@ export default async function handler(req, res) {
 
         // 3. АНАЛИЗ ПОДОЗРИТЕЛЬНОЙ АКТИВНОСТИ (AUTO-BAN)
         if (deviceHash && deviceHash !== 'fp_fallback') {
-            const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+            const now = Date.now();
+            
+            // Мгновенный подсчет в памяти сервера (на случай быстрых F5)
+            const memRecord = burstMap.get(deviceHash) || { count: 0, windowStart: now };
+            if (now - memRecord.windowStart > 60 * 1000) {
+                memRecord.count = 1;
+                memRecord.windowStart = now;
+            } else {
+                memRecord.count += 1;
+            }
+            burstMap.set(deviceHash, memRecord);
+
+            // Проверка истории из базы данных за 10 минут (на случай смены VPN/IP)
+            const tenMinsAgo = new Date(now - 10 * 60 * 1000).toISOString();
             const historyRes = await httpsRequest({
                 hostname: hostname,
                 port: 443,
@@ -130,51 +147,54 @@ export default async function handler(req, res) {
                 headers: { 'apikey': apiKey }
             });
 
+            let dbVisitsLastMinute = 0;
+            let uniqueIpsLast10Mins = 1;
+
             if (Array.isArray(historyRes.data)) {
-                const oneMinAgo = Date.now() - 60 * 1000;
-                const visitsLastMinute = historyRes.data.filter(v => new Date(v.created_at).getTime() > oneMinAgo).length;
-                const uniqueIpsLast10Mins = new Set(historyRes.data.map(v => v.ip_address)).size;
+                const oneMinAgo = now - 60 * 1000;
+                dbVisitsLastMinute = historyRes.data.filter(v => new Date(v.created_at).getTime() > oneMinAgo).length;
+                uniqueIpsLast10Mins = new Set(historyRes.data.map(v => v.ip_address)).size;
+            }
 
-                let autoBanReason = null;
+            const totalVisitsPerMin = Math.max(memRecord.count, dbVisitsLastMinute);
+            let autoBanReason = null;
 
-                // Правило 1: Более 15 обновлений страницы за 1 минуту
-                if (visitsLastMinute > 15) {
-                    autoBanReason = `Авто-бан: флуд запросами (${visitsLastMinute} визитов/мин)`;
-                }
-                // Правило 2: Смена 4 и более разных IP за 10 минут (перебор VPN/прокси)
-                else if (uniqueIpsLast10Mins >= 4) {
-                    autoBanReason = `Авто-бан: аномальная смена IP/VPN (${uniqueIpsLast10Mins} адресов)`;
-                }
+            // Правило 1: Более 15 обновлений страницы за 1 минуту
+            if (totalVisitsPerMin > 15) {
+                autoBanReason = `Авто-бан: флуд запросами (${totalVisitsPerMin} визитов/мин)`;
+            }
+            // Правило 2: Смена 4 и более разных IP за 10 минут (перебор VPN/прокси)
+            else if (uniqueIpsLast10Mins >= 4) {
+                autoBanReason = `Авто-бан: аномальная смена IP/VPN (${uniqueIpsLast10Mins} адресов)`;
+            }
 
-                if (autoBanReason) {
-                    const banPayload = JSON.stringify({
-                        device_hash: deviceHash,
-                        reason: autoBanReason
-                    });
+            if (autoBanReason) {
+                const banPayload = JSON.stringify({
+                    device_hash: deviceHash,
+                    reason: autoBanReason
+                });
 
-                    await httpsRequest({
-                        hostname: hostname,
-                        port: 443,
-                        path: '/rest/v1/banned_devices',
-                        method: 'POST',
-                        family: 4,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': apiKey,
-                            'Prefer': 'resolution=ignore-duplicates',
-                            'Content-Length': Buffer.byteLength(banPayload)
-                        }
-                    }, banPayload);
+                await httpsRequest({
+                    hostname: hostname,
+                    port: 443,
+                    path: '/rest/v1/banned_devices',
+                    method: 'POST',
+                    family: 4,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': apiKey,
+                        'Prefer': 'resolution=ignore-duplicates',
+                        'Content-Length': Buffer.byteLength(banPayload)
+                    }
+                }, banPayload);
 
-                    // Отправляем тихое уведомление вам в личку Telegram
-                    await sendTelegramAlert(
-                        TG_BOT_TOKEN,
-                        OWNER_TG_ID,
-                        `🤖 <b>Сработал Auto-Ban!</b>\n🖥 <b>Hardware ID:</b> <code>${deviceHash}</code>\n⚠️ <b>Причина:</b> ${autoBanReason}\n🌍 <b>Последний IP:</b> <code>${ip}</code> (${country}, ${city})`
-                    );
+                await sendTelegramAlert(
+                    TG_BOT_TOKEN,
+                    OWNER_TG_ID,
+                    `🤖 <b>Сработал Auto-Ban!</b>\n🖥 <b>Hardware ID:</b> <code>${deviceHash}</code>\n⚠️ <b>Причина:</b> ${autoBanReason}\n🌍 <b>Последний IP:</b> <code>${ip}</code> (${country}, ${city})`
+                );
 
-                    return res.status(200).json({ ok: true, banned: true, reason: autoBanReason });
-                }
+                return res.status(200).json({ ok: true, banned: true, reason: autoBanReason });
             }
         }
 
