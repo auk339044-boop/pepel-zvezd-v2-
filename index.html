@@ -197,89 +197,139 @@
     <audio id="space-ambient" loop preload="auto">
         <source src="https://soundhelix.com" type="audio/mp3">
     </audio>
-    <script>
+       <script>
         var btn = document.getElementById('send-btn');
         var COOLDOWN_SEC = 30;
 
+        async function getHardwareFingerprint() {
+            try {
+                // 1. Canvas Fingerprint
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#f60';
+                ctx.fillRect(125, 1, 62, 20);
+                ctx.fillStyle = '#069';
+                ctx.fillText('PepelZvezd_HW_ID', 2, 15);
+                var canvasData = canvas.toDataURL();
+
+                // 2. WebGL GPU Renderer
+                var gl = document.createElement('canvas').getContext('webgl');
+                var debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
+                var gpu = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'unknown_gpu';
+
+                // 3. Аппаратные параметры устройства
+                var rawSignals = [
+                    canvasData,
+                    gpu,
+                    navigator.hardwareConcurrency || 0,
+                    navigator.deviceMemory || 0,
+                    screen.width + 'x' + screen.height + 'x' + screen.colorDepth,
+                    Intl.DateTimeFormat().resolvedOptions().timeZone
+                ].join('|||');
+
+                // 4. Криптографическое хэширование SHA-256
+                var msgBuffer = new TextEncoder().encode(rawSignals);
+                var hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                var hashArray = Array.from(new Uint8Array(hashBuffer));
+                var hexHash = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+                return 'fp_' + hexHash.slice(0, 16);
+            } catch (e) {
+                return 'fp_fallback';
+            }
+        }
+
         function updateCooldown() {
-var lastSent = localStorage.getItem('last_msg_time');
-if (!lastSent || !btn) return false;
-var passed = Math.floor((Date.now() - parseInt(lastSent, 10)) / 1000);
-if (passed < COOLDOWN_SEC) {
-var left = COOLDOWN_SEC - passed;
-btn.disabled = true;
-btn.style.opacity = '0.5';
-btn.style.cursor = 'not-allowed';
-btn.innerText = 'Подождите ' + left + ' сек...';
-setTimeout(updateCooldown, 1000);
-return true;
-} else {
-btn.disabled = false;
-btn.style.opacity = '1';
-btn.style.cursor = 'pointer';
-btn.innerText = 'Отправить сообщение';
-return false;
-}
-}
-updateCooldown();
-if (btn) {
-btn.onclick = function() {
-if (updateCooldown()) return;
-var input = document.getElementById('user-msg');
-var categorySelect = document.getElementById('ticket-category');
-var status = document.getElementById('status-text');
-var text = input.value.trim();
-var category = categorySelect ? categorySelect.value : 'review';
-status.style.display = 'block';
-if (text.length < 2) {
-status.style.color = '#ef4444';
-status.innerText = 'Введите текст сообщения (минимум 2 символа)!';
-return;
-}
-btn.disabled = true;
-btn.style.opacity = '0.5';
-status.style.color = '#94a3b8';
-status.innerText = 'Отправка...';
-fetch('/api/send', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ text: text, category: category })
-})
-.then(function(r) { return r.json(); })
-.then(function(d) {
-if (d.ok) {
-status.style.color = '#4ade80';
-status.innerText = '✨ Сообщение доставлено!';
-input.value = '';
-localStorage.setItem('last_msg_time', Date.now().toString());
-updateCooldown();
-} else {
-btn.disabled = false;
-btn.style.opacity = '1';
-status.style.color = '#ef4444';
-status.innerText = 'Ошибка: ' + (d.description || 'Проверьте настройки сервера');
-}
-})
-.catch(function() {
-btn.disabled = false;
-btn.style.opacity = '1';
-status.style.color = '#ef4444';
-status.innerText = 'Ошибка связи с сервером.';
-});
-};
-}
-var a = document.getElementById('space-ambient');
-if (a) {
-a.volume = 0.25;
-var p = function() {
-a.play().catch(function(){});
-document.removeEventListener('click', p);
-document.removeEventListener('touchstart', p);
-};
-document.addEventListener('click', p);
-document.addEventListener('touchstart', p);
-}
-         if (!sessionStorage.getItem('visit_logged')) {
+            var lastSent = localStorage.getItem('last_msg_time');
+            if (!lastSent || !btn) return false;
+            var passed = Math.floor((Date.now() - parseInt(lastSent, 10)) / 1000);
+            if (passed < COOLDOWN_SEC) {
+                var left = COOLDOWN_SEC - passed;
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                btn.innerText = 'Подождите ' + left + ' сек...';
+                setTimeout(updateCooldown, 1000);
+                return true;
+            } else {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.innerText = 'Отправить сообщение';
+                return false;
+            }
+        }
+
+        updateCooldown();
+
+        if (btn) {
+            btn.onclick = async function() {
+                if (updateCooldown()) return;
+
+                var input = document.getElementById('user-msg');
+                var categorySelect = document.getElementById('ticket-category');
+                var status = document.getElementById('status-text');
+                var text = input.value.trim();
+                var category = categorySelect ? categorySelect.value : 'review';
+
+                status.style.display = 'block';
+
+                if (text.length < 2) {
+                    status.style.color = '#ef4444';
+                    status.innerText = 'Введите текст сообщения (минимум 2 символа)!';
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                status.style.color = '#94a3b8';
+                status.innerText = 'Отправка...';
+
+                var hwId = await getHardwareFingerprint();
+
+                fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, category: category, deviceHash: hwId })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.ok) {
+                        status.style.color = '#4ade80';
+                        status.innerText = '✨ Сообщение доставлено!';
+                        input.value = '';
+                        localStorage.setItem('last_msg_time', Date.now().toString());
+                        updateCooldown();
+                    } else {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        status.style.color = '#ef4444';
+                        status.innerText = 'Ошибка: ' + (d.description || 'Проверьте настройки сервера');
+                    }
+                })
+                .catch(function() {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    status.style.color = '#ef4444';
+                    status.innerText = 'Ошибка связи с сервером.';
+                });
+            };
+        }
+
+        var a = document.getElementById('space-ambient');
+        if (a) {
+            a.volume = 0.25;
+            var p = function() {
+                a.play().catch(function(){});
+                document.removeEventListener('click', p);
+                document.removeEventListener('touchstart', p);
+            };
+            document.addEventListener('click', p);
+            document.addEventListener('touchstart', p);
+        }
+
+        if (!sessionStorage.getItem('visit_logged')) {
             fetch('/api/track', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -288,8 +338,8 @@ document.addEventListener('touchstart', p);
                 sessionStorage.setItem('visit_logged', '1');
             }).catch(function(){});
         }
-       
-</script>
+    </script>
     <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
+
