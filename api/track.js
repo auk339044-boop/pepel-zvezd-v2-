@@ -19,6 +19,26 @@ function httpsRequest(options, payloadStr = null) {
     });
 }
 
+function sendTelegramAlert(token, ownerId, text) {
+    if (!token || !ownerId) return Promise.resolve();
+    const postData = JSON.stringify({
+        chat_id: ownerId.trim(),
+        text: text,
+        parse_mode: 'HTML'
+    });
+    return httpsRequest({
+        hostname: 'api.telegram.org',
+        port: 443,
+        path: `/bot${token}/sendMessage`,
+        method: 'POST',
+        family: 4,
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    }, postData).catch(() => {});
+}
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -26,6 +46,8 @@ export default async function handler(req, res) {
 
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_KEY;
+    const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN;
+    const OWNER_TG_ID = process.env.OWNER_TG_ID;
 
     if (!SUPABASE_URL || !SUPABASE_KEY) {
         return res.status(500).json({ ok: false, error: 'Missing Supabase credentials' });
@@ -33,7 +55,6 @@ export default async function handler(req, res) {
 
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
     const ip = rawIp.split(',')[0].trim();
-    
     const country = req.headers['x-vercel-ip-country'] || 'Unknown';
     const city = decodeURIComponent(req.headers['x-vercel-ip-city'] || 'Unknown');
     const ua = req.headers['user-agent'] || 'Unknown';
@@ -52,7 +73,27 @@ export default async function handler(req, res) {
     const apiKey = SUPABASE_KEY.trim();
 
     try {
-        // 1. Записываем визит вместе с отпечатком устройства (device_hash)
+        // 1. Проверяем, не забанено ли устройство уже сейчас
+        if (deviceHash && deviceHash !== 'fp_fallback') {
+            const banCheck = await httpsRequest({
+                hostname: hostname,
+                port: 443,
+                path: `/rest/v1/banned_devices?device_hash=eq.${encodeURIComponent(deviceHash)}&select=reason`,
+                method: 'GET',
+                family: 4,
+                headers: { 'apikey': apiKey }
+            });
+
+            if (Array.isArray(banCheck.data) && banCheck.data.length > 0) {
+                return res.status(200).json({
+                    ok: true,
+                    banned: true,
+                    reason: banCheck.data[0].reason || 'Доступ ограничен администрацией'
+                });
+            }
+        }
+
+        // 2. Записываем текущий визит в таблицу visitors
         const payload = JSON.stringify({
             ip_address: ip,
             country: country,
@@ -77,27 +118,67 @@ export default async function handler(req, res) {
             }
         }, payload);
 
-        // 2. Проверяем, не находится ли это устройство в таблице banned_devices
-        let isBanned = false;
-        let banReason = '';
-
-        if (deviceHash) {
-            const banCheck = await httpsRequest({
+        // 3. АНАЛИЗ ПОДОЗРИТЕЛЬНОЙ АКТИВНОСТИ (AUTO-BAN)
+        if (deviceHash && deviceHash !== 'fp_fallback') {
+            const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+            const historyRes = await httpsRequest({
                 hostname: hostname,
                 port: 443,
-                path: `/rest/v1/banned_devices?device_hash=eq.${encodeURIComponent(deviceHash)}&select=reason`,
+                path: `/rest/v1/visitors?device_hash=eq.${encodeURIComponent(deviceHash)}&created_at=gte.${encodeURIComponent(tenMinsAgo)}&select=ip_address,created_at`,
                 method: 'GET',
                 family: 4,
                 headers: { 'apikey': apiKey }
             });
 
-            if (Array.isArray(banCheck.data) && banCheck.data.length > 0) {
-                isBanned = true;
-                banReason = banCheck.data[0].reason || 'Доступ ограничен администрацией';
+            if (Array.isArray(historyRes.data)) {
+                const oneMinAgo = Date.now() - 60 * 1000;
+                const visitsLastMinute = historyRes.data.filter(v => new Date(v.created_at).getTime() > oneMinAgo).length;
+                const uniqueIpsLast10Mins = new Set(historyRes.data.map(v => v.ip_address)).size;
+
+                let autoBanReason = null;
+
+                // Правило 1: Более 15 обновлений страницы за 1 минуту
+                if (visitsLastMinute > 15) {
+                    autoBanReason = `Авто-бан: флуд запросами (${visitsLastMinute} визитов/мин)`;
+                }
+                // Правило 2: Смена 4 и более разных IP за 10 минут (перебор VPN/прокси)
+                else if (uniqueIpsLast10Mins >= 4) {
+                    autoBanReason = `Авто-бан: аномальная смена IP/VPN (${uniqueIpsLast10Mins} адресов)`;
+                }
+
+                if (autoBanReason) {
+                    const banPayload = JSON.stringify({
+                        device_hash: deviceHash,
+                        reason: autoBanReason
+                    });
+
+                    await httpsRequest({
+                        hostname: hostname,
+                        port: 443,
+                        path: '/rest/v1/banned_devices',
+                        method: 'POST',
+                        family: 4,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': apiKey,
+                            'Prefer': 'resolution=ignore-duplicates',
+                            'Content-Length': Buffer.byteLength(banPayload)
+                        }
+                    }, banPayload);
+
+                    // Отправляем тихое уведомление вам в личку Telegram
+                    await sendTelegramAlert(
+                        TG_BOT_TOKEN,
+                        OWNER_TG_ID,
+                        `🤖 <b>Сработал Auto-Ban!</b>\n🖥 <b>Hardware ID:</b> <code>${deviceHash}</code>\n⚠️ <b>Причина:</b> ${autoBanReason}\n🌍 <b>Последний IP:</b> <code>${ip}</code> (${country}, ${city})`
+                    );
+
+                    return res.status(200).json({ ok: true, banned: true, reason: autoBanReason });
+                }
             }
         }
 
-        return res.status(200).json({ ok: true, banned: isBanned, reason: banReason });
+        return res.status(200).json({ ok: true, banned: false });
     } catch (err) {
         return res.status(500).json({ ok: false, error: err.message });
     }
