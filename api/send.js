@@ -46,7 +46,9 @@ async function checkDeviceBan(supabaseUrl, supabaseKey, deviceHash) {
     if (!supabaseUrl || !supabaseKey || !deviceHash) return null;
     try {
         const baseOrigin = new URL(supabaseUrl.trim()).origin;
-        const path = `/rest/v1/banned_devices?device_hash=eq.${encodeURIComponent(deviceHash)}&select=reason`;
+        const cleanHash = deviceHash.trim();
+        const path = `/rest/v1/banned_devices?device_hash=eq.${encodeURIComponent(cleanHash)}&select=reason`;
+        
         const res = await httpsRequest({
             hostname: new URL(baseOrigin).hostname,
             port: 443,
@@ -54,12 +56,12 @@ async function checkDeviceBan(supabaseUrl, supabaseKey, deviceHash) {
             method: 'GET',
             family: 4,
             headers: {
-                'apikey': supabaseKey.trim(),
-                'Authorization': `Bearer ${supabaseKey.trim()}`
+                'apikey': supabaseKey.trim()
             }
         });
+
         if (Array.isArray(res.data) && res.data.length > 0) {
-            return res.data[0].reason || 'Доступ ограничен';
+            return res.data.reason || 'Доступ ограничен';
         }
     } catch (e) {
         console.error('Ban check error:', e.message);
