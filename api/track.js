@@ -9,7 +9,7 @@ export default function handler(req, res) {
     const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_KEY) {
-        return res.status(500).json({ ok: false, error: 'Не заданы SUPABASE_URL или SUPABASE_KEY в Vercel' });
+        return res.status(500).json({ ok: false, error: 'Missing Supabase credentials' });
     }
 
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
