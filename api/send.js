@@ -59,7 +59,7 @@ async function checkDeviceBan(supabaseUrl, supabaseKey, deviceHash) {
             }
         });
         if (Array.isArray(res.data) && res.data.length > 0) {
-            return res.data.reason || 'Доступ ограничен';
+            return res.data[0].reason || 'Доступ ограничен';
         }
     } catch (e) {
         console.error('Ban check error:', e.message);
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
     }
 
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    const clientIp = rawIp.split(',').trim();
+    const clientIp = rawIp.split(',')[0].trim();
     const now = Date.now();
 
     if (rateLimitMap.size > 1000) rateLimitMap.clear();
