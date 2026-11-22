@@ -221,7 +221,7 @@
         </div>
     </div>
 
-    <script>
+       <script>
         var btn = document.getElementById('send-btn');
         var COOLDOWN_SEC = 30;
         var currentAdminPass = '';
@@ -275,7 +275,7 @@
             }
         }
 
-        // 3. Активация скрытой админки (кодовое слово "root" на клавиатуре или 5 кликов по звезде)
+        // 3. Активация скрытой админки (слово "root" на клавиатуре или 5 кликов по звезде)
         var keyBuffer = '';
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
@@ -299,7 +299,7 @@
             });
         }
 
-              function loadAdminStats() {
+        function loadAdminStats() {
             var passInput = document.getElementById('admin-pass-input').value;
             if (passInput) currentAdminPass = passInput;
             var errEl = document.getElementById('admin-auth-err');
@@ -331,15 +331,6 @@
             .catch(function(err) {
                 errEl.innerText = 'Детали сбоя: ' + err.message;
             });
-        }
-
-                }
-                errEl.innerText = '';
-                document.getElementById('admin-auth-box').style.display = 'none';
-                document.getElementById('admin-content-box').style.display = 'block';
-                renderAdminDevices(data.devices || []);
-            })
-            .catch(function() { errEl.innerText = 'Ошибка сети'; });
         }
 
         function renderAdminDevices(devices) {
@@ -397,47 +388,55 @@
                 btn.disabled = true;
                 btn.style.opacity = '0.5';
                 btn.style.cursor = 'not-allowed';
-btn.innerText = 'Подождите ' + left + ' сек...';
-setTimeout(updateCooldown, 1000);
-return true;
-} else {
-btn.disabled = false;
-btn.style.opacity = '1';
-btn.style.cursor = 'pointer';
-btn.innerText = 'Отправить сообщение';
-return false;
-}
-}
-updateCooldown();
-if (btn) {
-btn.onclick = async function() {
-if (updateCooldown()) return;
-var input = document.getElementById('user-msg');
-var categorySelect = document.getElementById('ticket-category');
-var status = document.getElementById('status-text');
-var text = input.value.trim();
-var category = categorySelect ? categorySelect.value : 'review';
-status.style.display = 'block';
-if (text.length < 2) {
-status.style.color = '#ef4444';
-status.innerText = 'Введите текст сообщения (минимум 2 символа)!';
-return;
-}
-btn.disabled = true;
-btn.style.opacity = '0.5';
-status.style.color = '#94a3b8';
-status.innerText = 'Отправка...';
-var hwId = await getHardwareFingerprint();
-fetch('/api/send', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ text: text, category: category, deviceHash: hwId })
-})
-.then(function(r) { return r.json(); })
-.then(function(d) {
-if (d.ok) {
-status.style.color = '#4ade80';
-status.innerText = '✨ Сообщение доставлено!';
+                btn.innerText = 'Подождите ' + left + ' сек...';
+                setTimeout(updateCooldown, 1000);
+                return true;
+            } else {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.innerText = 'Отправить сообщение';
+                return false;
+            }
+        }
+
+        updateCooldown();
+
+        if (btn) {
+            btn.onclick = async function() {
+                if (updateCooldown()) return;
+
+                var input = document.getElementById('user-msg');
+                var categorySelect = document.getElementById('ticket-category');
+                var status = document.getElementById('status-text');
+                var text = input.value.trim();
+                var category = categorySelect ? categorySelect.value : 'review';
+
+                status.style.display = 'block';
+
+                if (text.length < 2) {
+                    status.style.color = '#ef4444';
+                    status.innerText = 'Введите текст сообщения (минимум 2 символа)!';
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                status.style.color = '#94a3b8';
+                status.innerText = 'Отправка...';
+
+                var hwId = await getHardwareFingerprint();
+
+                fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, category: category, deviceHash: hwId })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.ok) {
+                        status.style.color = '#4ade80';
+                        status.innerText = '✨ Сообщение доставлено!';
 input.value = '';
 localStorage.setItem('last_msg_time', Date.now().toString());
 updateCooldown();
