@@ -192,17 +192,6 @@
         </div>
     </div>
     <script>
-        // Умный переход в TikTok для мобильных устройств
-        var ttBtn = document.getElementById('tiktok-btn');
-        if (ttBtn && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-            ttBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                window.location.href = 'snssdk1233://user/profile/pepelzvezd';
-                setTimeout(function() {
-                    window.location.href = 'https://tiktok.com';
-                }, 700);
-            });
-        }
 
         function detectAutomationBot() {
             try {
