@@ -183,11 +183,17 @@
             <a href="https://www.tiktok.com/@ashesstarss_bot?_r=1&_t=ZS-9BasQOgIiaT" class="btn-link" target="_blank" rel="noopener">🎵 Наш TikTok</a>
         </div>
         <div class="feedback-form">
+                   <div class="feedback-form">
             <h3>📩 Оставить обращение:</h3>
             <select id="ticket-category" class="feedback-select">
                 <option value="review">⭐️ Отзывы</option>
                 <option value="admin">🚨 Вызов админа</option>
             </select>
+            <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение здесь..."></textarea>
+            <button type="button" id="send-btn" class="btn-submit">Отправить сообщение</button>
+            <div id="status-text" class="status-msg"></div>
+        </div>
+
             <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение здесь..."></textarea>
             <button type="button" id="send-btn" class="btn-submit">Отправить сообщение</button>
             <div id="status-text" class="status-msg"></div>
