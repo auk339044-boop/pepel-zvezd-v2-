@@ -235,7 +235,7 @@
         </div>
     </div>
 
-       <script>
+           <script>
         var btn = document.getElementById('send-btn');
         var COOLDOWN_SEC = 30;
         var currentAdminPass = '';
@@ -253,7 +253,40 @@
             }
         }
 
-        // 2. Генератор отпечатка железа (Canvas + WebGL + SHA-256)
+        // 2. Кросс-браузерный AudioContext Fingerprint (сигнатура звукового чипа)
+        async function getAudioFingerprint() {
+            try {
+                var AudioCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+                if (!AudioCtx) return 'no_audio';
+                var context = new AudioCtx(1, 44100, 44100);
+                var oscillator = context.createOscillator();
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(10000, context.currentTime);
+
+                var compressor = context.createDynamicsCompressor();
+                compressor.threshold.setValueAtTime(-50, context.currentTime);
+                compressor.knee.setValueAtTime(40, context.currentTime);
+                compressor.ratio.setValueAtTime(12, context.currentTime);
+                compressor.attack.setValueAtTime(0, context.currentTime);
+                compressor.release.setValueAtTime(0.25, context.currentTime);
+
+                oscillator.connect(compressor);
+                compressor.connect(context.destination);
+                oscillator.start(0);
+
+                var buffer = await context.startRendering();
+                var data = buffer.getChannelData(0);
+                var sum = 0;
+                for (var i = 4500; i < 5000; i++) {
+                    sum += Math.abs(data[i]);
+                }
+                return sum.toFixed(6);
+            } catch (e) {
+                return 'audio_err';
+            }
+        }
+
+        // 3. Единый генератор отпечатка железа (Canvas + WebGL + AudioContext + SHA-256)
         async function getHardwareFingerprint() {
             try {
                 var canvas = document.createElement('canvas');
@@ -270,9 +303,12 @@
                 var debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
                 var gpu = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'unknown_gpu';
 
+                var audioSig = await getAudioFingerprint();
+
                 var rawSignals = [
                     canvasData,
                     gpu,
+                    audioSig,
                     navigator.hardwareConcurrency || 0,
                     navigator.deviceMemory || 0,
                     screen.width + 'x' + screen.height + 'x' + screen.colorDepth,
@@ -289,7 +325,7 @@
             }
         }
 
-        // 3. Активация скрытой админки (слово "root" на клавиатуре или 5 кликов по звезде)
+        // 4. Активация скрытой админки (слово "root" или 5 кликов по звезде)
         var keyBuffer = '';
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
@@ -392,7 +428,7 @@
             }).then(function() { loadAdminStats(); });
         }
 
-        // 4. Таймер антиспама
+        // 5. Таймер антиспама
         function updateCooldown() {
             var lastSent = localStorage.getItem('last_msg_time');
             if (!lastSent || !btn) return false;
@@ -409,48 +445,44 @@
                 btn.disabled = false;
                 btn.style.opacity = '1';
                 btn.style.cursor = 'pointer';
-                btn.innerText = 'Отправить сообщение';
-                return false;
-            }
-        }
-
-        updateCooldown();
-
-        if (btn) {
-            btn.onclick = async function() {
-                if (updateCooldown()) return;
-
-                var input = document.getElementById('user-msg');
-                var categorySelect = document.getElementById('ticket-category');
-                var status = document.getElementById('status-text');
-                var text = input.value.trim();
-                var category = categorySelect ? categorySelect.value : 'review';
-
-                status.style.display = 'block';
-
-                if (text.length < 2) {
-                    status.style.color = '#ef4444';
-                    status.innerText = 'Введите текст сообщения (минимум 2 символа)!';
-                    return;
-                }
-
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-                status.style.color = '#94a3b8';
-                status.innerText = 'Отправка...';
-
-                var hwId = await getHardwareFingerprint();
-
-                fetch('/api/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text, category: category, deviceHash: hwId })
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(d) {
-                    if (d.ok) {
-                        status.style.color = '#4ade80';
-                        status.innerText = '✨ Сообщение доставлено!';
+btn.innerText = 'Отправить сообщение';
+return false;
+}
+}
+updateCooldown();
+if (btn) {
+btn.onclick = async function() {
+if (updateCooldown()) return;
+var input = document.getElementById('user-msg');
+var categorySelect = document.getElementById('ticket-category');
+var status = document.getElementById('status-text');
+var text = input.value.trim();
+var category = categorySelect ? categorySelect.value : 'review';
+status.style.display = 'block';
+if (text.length < 2) {
+status.style.color = '#ef4444';
+status.innerText = 'Введите текст сообщения (минимум 2 символа)!';
+return;
+}
+btn.disabled = true;
+btn.style.opacity = '0.5';
+status.style.color = '#94a3b8';
+status.innerText = 'Отправка...';
+var hwId = await getHardwareFingerprint();
+var hpVal = document.getElementById('hp-website') ? document.getElementById('hp-website').value : '';
+fetch('/api/send', {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+'X-Portal-Client': 'pepel-v2-verified'
+},
+body: JSON.stringify({ text: text, category: category, deviceHash: hwId, honeypot: hpVal })
+})
+.then(function(r) { return r.json(); })
+.then(function(d) {
+if (d.ok) {
+status.style.color = '#4ade80';
+status.innerText = '✨ Сообщение доставлено!';
 input.value = '';
 localStorage.setItem('last_msg_time', Date.now().toString());
 updateCooldown();
@@ -469,7 +501,7 @@ status.innerText = 'Ошибка связи с сервером.';
 });
 };
 }
-// 5. Фоновый эмбиент
+// 6. Фоновый эмбиент
 var a = document.getElementById('space-ambient');
 if (a) {
 a.volume = 0.25;
@@ -481,7 +513,7 @@ document.removeEventListener('touchstart', p);
 document.addEventListener('click', p);
 document.addEventListener('touchstart', p);
 }
-// 6. Телеметрия визита + проверка бана и детектор ботов
+// 7. Телеметрия визита + проверка бана и детектор ботов
 (async function() {
 var hwId = await getHardwareFingerprint();
 var isBot = detectAutomationBot();
