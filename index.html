@@ -7,7 +7,7 @@
     <style>
         :root {
             --bg-color: #0b0f19;
-            --card-bg: rgba(30, 41, 59, 0.4);
+            --card-bg: rgba(30, 41, 59, 0.45);
             --text-color: #f8fafc;
             --accent-color: #c084fc;
             --hover-color: #e9d5ff;
@@ -21,7 +21,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px;
             overflow-x: hidden;
             position: relative;
         }
@@ -45,13 +45,30 @@
             from { background-position: 0 0, 40px 60px, 130px 270px; }
             to { background-position: 550px 1100px, 1400px 1050px, 1000px 1350px; }
         }
-        .container {
-            width: 100%; max-width: 450px; text-align: center;
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-            padding: 30px 24px; border-radius: 24px;
-            background: rgba(15, 23, 42, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        .main-wrapper {
+            width: 100%;
+            max-width: 920px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+        @media (max-width: 820px) {
+            .main-wrapper {
+                grid-template-columns: 1fr;
+                max-width: 450px;
+            }
+        }
+        .panel-card {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 32px 28px;
+            border-radius: 24px;
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
+            text-align: center;
+            position: relative;
         }
         .profile-star {
             width: 80px; height: 80px; margin: 0 auto 20px; position: relative; background: #fff;
@@ -64,7 +81,7 @@
             100% { transform: scale(1.05) rotate(5deg); background: #ffffff; }
         }
         .star-glow-effect {
-            position: absolute; width: 100px; height: 100px;
+            position: absolute; width: 110px; height: 110px;
             background: radial-gradient(circle, rgba(192,132,252,0.4) 0%, transparent 70%);
             top: 20px; left: 50%; transform: translateX(-50%); z-index: -1; pointer-events: none;
         }
@@ -75,8 +92,8 @@
         }
         .description { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
         .about-spoiler {
-            background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(192, 132, 252, 0.15);
-            border-radius: 14px; padding: 12px 16px; margin-bottom: 24px;
+            background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(192, 132, 252, 0.18);
+            border-radius: 14px; padding: 12px 16px; margin-bottom: 22px;
             text-align: left; font-size: 13px; color: #cbd5e1;
         }
         .about-spoiler summary {
@@ -88,75 +105,75 @@
             margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06);
             line-height: 1.5; color: #94a3b8;
         }
-        .links-container { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+        .links-container { display: flex; flex-direction: column; gap: 14px; }
         .btn-link {
             display: block; background-color: var(--card-bg); color: var(--text-color);
-            text-decoration: none; padding: 16px 24px; border-radius: 14px;
-            font-size: 16px; font-weight: 600; transition: all 0.3s ease;
+            text-decoration: none; padding: 15px 22px; border-radius: 14px;
+            font-size: 15px; font-weight: 600; transition: all 0.25s ease;
             border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer;
         }
         .btn-link:hover {
-            transform: translateY(-3px); background-color: rgba(192, 132, 252, 0.15);
+            transform: translateY(-2px); background-color: rgba(192, 132, 252, 0.16);
             border-color: var(--accent-color); box-shadow: 0 0 20px rgba(192, 132, 252, 0.3);
         }
         .btn-main {
             background: linear-gradient(135deg, #6b21a8 0%, #3b0764 100%);
-            border: 1px solid rgba(192, 132, 252, 0.3); box-shadow: 0 4px 15px rgba(107, 33, 168, 0.4);
+            border: 1px solid rgba(192, 132, 252, 0.35); box-shadow: 0 4px 15px rgba(107, 33, 168, 0.45);
         }
-        .feedback-form {
-            background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px; padding: 20px; text-align: left; position: relative;
-        }
-        .feedback-form h3 { font-size: 16px; margin-bottom: 12px; color: var(--hover-color); font-weight: 600; }
+        .feedback-form { text-align: left; }
+        .feedback-form h3 { font-size: 17px; margin-bottom: 14px; color: var(--hover-color); font-weight: 600; }
         .feedback-select {
             width: 100%; background: rgba(11, 15, 25, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
-            padding: 10px 12px; color: #f8fafc; font-family: inherit; font-size: 14px;
-            outline: none; margin-bottom: 12px; cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+            padding: 12px 14px; color: #f8fafc; font-family: inherit; font-size: 14px;
+            outline: none; margin-bottom: 14px; cursor: pointer;
         }
         .feedback-textarea {
-            width: 100%; height: 90px; background: rgba(11, 15, 25, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
-            padding: 12px; color: #fff; font-family: inherit; font-size: 14px;
-            resize: none; outline: none; margin-bottom: 12px;
+            width: 100%; height: 115px; background: rgba(11, 15, 25, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+            padding: 14px; color: #fff; font-family: inherit; font-size: 14px;
+            resize: none; outline: none; margin-bottom: 14px;
         }
         .btn-submit {
             width: 100%; background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
-            color: #0b0f19; border: none; padding: 12px; border-radius: 10px;
-            font-weight: 700; font-size: 14px; cursor: pointer;
+            color: #0b0f19; border: none; padding: 14px; border-radius: 12px;
+            font-weight: 700; font-size: 15px; cursor: pointer; transition: opacity 0.2s;
         }
-        .status-msg { font-size: 13px; margin-top: 10px; display: none; font-weight: 600; }
-        footer { margin-top: 32px; font-size: 11px; color: #475569; }
+        .btn-submit:hover { opacity: 0.92; }
+        .status-msg { font-size: 13px; margin-top: 12px; display: none; font-weight: 600; }
+        footer { margin-top: 24px; font-size: 11px; color: #475569; text-align: center; }
     </style>
 </head>
 <body>
     <div class="space-bg"></div>
     <div class="stars-overlay"></div>
-    <div class="container">
-        <div class="star-glow-effect"></div>
-        <div class="profile-star" id="star-trigger"></div>
-        <h1>Пепел звезд</h1>
-        <p class="description">Официальные ресурсы и каналы связи</p>
 
-        <details class="about-spoiler">
-            <summary>
-                <span>ℹ️ О проекте «Пепел звёзд»</span>
-                <span style="font-size: 11px; color: #c084fc;">▼</span>
-            </summary>
-            <p>
-                <strong>Пепел звёзд</strong> — анонимный Telegram-бот поддержки и уютного общения. Через этот веб-портал вы можете в один клик запустить бота, заполнить анкету, ознакомиться с реальными отзывами или отправить обращение администрации через защищённую тикет-систему.
-            </p>
-        </details>
+    <div class="main-wrapper">
+        <div class="panel-card">
+            <div class="star-glow-effect"></div>
+            <div class="profile-star" id="star-trigger"></div>
+            <h1>Пепел звезд</h1>
+            <p class="description">Официальные ресурсы и каналы связи</p>
 
-        <a href="https://tiktok.com" class="btn-link" target="_blank" rel="noopener noreferrer">🎵 Наш TikTok</a>
+            <details class="about-spoiler">
+                <summary>
+                    <span>ℹ️ О проекте «Пепел звёзд»</span>
+                    <span style="font-size: 11px; color: #c084fc;">▼</span>
+                </summary>
+                <p>
+                    <strong>Пепел звёзд</strong> — анонимный Telegram-бот поддержки и уютного общения. Через этот веб-портал вы можете в один клик запустить бота, заполнить анкету, ознакомиться с реальными отзывами или отправить обращение администрации через защищённую тикет-систему.
+                </p>
+            </details>
 
-            <a href="tg://resolve?domain=ashesstars_bot" class="btn-link btn-main">🌌 Запустить Telegram Бота</a>
-            <a href="tg://resolve?domain=anketashesstars_bot" class="btn-link">📝 Заполнить анкету (Анкетница)</a>
-            <a href="tg://resolve?domain=pepelzvezdotzv" class="btn-link">⭐️ Отзывы о боте</a>
-            <a href="https://tiktok.com" id="tiktok-btn" class="btn-link" target="_blank" rel="noopener noreferrer">🎵 Наш TikTok</a>
+            <div class="links-container">
+                <a href="tg://resolve?domain=ashesstars_bot" class="btn-link btn-main">🌌 Запустить Telegram Бота</a>
+                <a href="tg://resolve?domain=anketashesstars_bot" class="btn-link">📝 Заполнить анкету (Анкетница)</a>
+                <a href="tg://resolve?domain=pepelzvezdotzv" class="btn-link">⭐️ Отзывы о боте</a>
+                <a href="https://tiktok.com" class="btn-link" target="_blank" rel="noopener noreferrer">🎵 Наш TikTok</a>
+            </div>
         </div>
 
-        <div class="feedback-form">
+        <div class="panel-card feedback-form">
             <h3>📩 Оставить обращение:</h3>
             <select id="ticket-category" class="feedback-select">
                 <option value="review">⭐️ Отзывы</option>
@@ -166,9 +183,8 @@
             <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение здесь..."></textarea>
             <button type="button" id="send-btn" class="btn-submit">Отправить сообщение</button>
             <div id="status-text" class="status-msg"></div>
+            <footer>&copy; 2026 Пепел звезд. Все права защищены.</footer>
         </div>
-
-        <footer>&copy; 2026 Пепел звезд. Все права защищены.</footer>
     </div>
 
     <div id="admin-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(2,6,23,0.95); z-index:9999; overflow-y:auto; padding:20px; text-align:left; color:#f8fafc;">
@@ -192,7 +208,6 @@
         </div>
     </div>
     <script>
-
         function detectAutomationBot() {
             try {
                 return Boolean(navigator.webdriver || !navigator.languages || navigator.languages.length === 0);
@@ -203,7 +218,7 @@
             try {
                 var AudioCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
                 if (!AudioCtx) return 'no_audio';
-                var context = new AudioCtx(1, 44100, 44100);
+                var context = new AudioCtx(1, 11025, 44100);
                 var osc = context.createOscillator();
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(10000, context.currentTime);
@@ -214,7 +229,7 @@
                 var buffer = await context.startRendering();
                 var data = buffer.getChannelData(0);
                 var sum = 0;
-                for (var i = 4500; i < 5000; i++) sum += Math.abs(data[i]);
+                for (var i = 1000; i < 1500; i++) sum += Math.abs(data[i]);
                 return sum.toFixed(6);
             } catch (e) { return 'audio_err'; }
         }
@@ -284,7 +299,11 @@
                         ? '<button type="button" onclick="toggleBan(\'' + d.device_hash + '\', \'unban\')" style="background:#22c55e;color:#020617;border:none;padding:6px 10px;border-radius:6px;font-weight:700;">Разбанить</button>'
                         : '<button type="button" onclick="toggleBan(\'' + d.device_hash + '\', \'ban\')" style="background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:6px;font-weight:700;">⛔️ Бан</button>';
                     card.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><strong>' + d.device_hash + '</strong>' + btnHtml + '</div>' +
-                        '<div style="color:#94a3b8;">Устройство: ' + d.device + ' | Визитов: ' + d.total_visits + '<br>IP: ' + (d.used_ips || []).join(', ') + '</div>';
+                        '<div style="color:#94a3b8;line-height:1.5;">' +
+                        '📱 Устройство: ' + (d.device || 'Unknown') + ' | 👁 Визитов: ' + d.total_visits + '<br>' +
+                        '🌍 Локация: ' + (d.locations || []).join(', ') + '<br>' +
+                        '🌐 IP: ' + (d.used_ips || []).join(', ') +
+                        '</div>';
                     list.appendChild(card);
                 });
             })
@@ -322,14 +341,14 @@
                 .then(function(r) { return r.json(); })
                 .then(function(d) {
                     btn.disabled = false;
-                    if (d.ok) { status.style.color = '#4ade80'; status.innerText = '✨ Доставлено!'; input.value = ''; }
+                    if (d.ok) { status.style.color = '#4ade80'; status.innerText = '✨ Сообщение доставлено!'; input.value = ''; }
                     else { status.style.color = '#ef4444'; status.innerText = 'Ошибка: ' + d.description; }
                 })
                 .catch(function() { btn.disabled = false; status.style.color = '#ef4444'; status.innerText = 'Ошибка сети'; });
             };
         }
 
-        (async function() {
+        setTimeout(async function() {
             var hwId = await getHardwareFingerprint();
             fetch('/api/track', {
                 method: 'POST',
@@ -342,8 +361,7 @@
                     document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#020617;color:#ef4444;font-family:sans-serif;text-align:center;padding:20px;"><h1>⛔️ Доступ ограничен: ' + data.reason + '</h1></div>';
                 }
             }).catch(function(){});
-        })();
+        }, 400);
     </script>
-    <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
