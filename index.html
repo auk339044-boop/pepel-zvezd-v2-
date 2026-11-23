@@ -57,6 +57,7 @@
             width: 80px; height: 80px; margin: 0 auto 20px; position: relative; background: #fff;
             clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
             animation: pulseGlow 4s ease-in-out infinite alternate;
+            cursor: pointer;
         }
         @keyframes pulseGlow {
             0% { transform: scale(0.95) rotate(0deg); background: #f3e8ff; }
@@ -74,7 +75,6 @@
         }
         .description { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
 
-        /* Сворачиваемый спойлер о проекте */
         .about-spoiler {
             background: rgba(15, 23, 42, 0.55);
             border: 1px solid rgba(192, 132, 252, 0.15);
@@ -128,7 +128,7 @@
         }
         .feedback-form {
             background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px; padding: 20px; text-align: left;
+            border-radius: 16px; padding: 20px; text-align: left; position: relative;
         }
         .feedback-form h3 { font-size: 16px; margin-bottom: 12px; color: var(--hover-color); font-weight: 600; }
         .feedback-select {
@@ -160,11 +160,10 @@
     <div class="stars-overlay"></div>
     <div class="container">
         <div class="star-glow-effect"></div>
-        <div class="profile-star"></div>
+        <div class="profile-star" id="star-trigger"></div>
         <h1>Пепел звезд</h1>
         <p class="description">Официальные ресурсы и каналы связи</p>
 
-        <!-- Сворачиваемый спойлер о проекте -->
         <details class="about-spoiler">
             <summary>
                 <span>ℹ️ О проекте «Пепел звёзд»</span>
@@ -172,7 +171,7 @@
             </summary>
             <p>
                 <strong>Пепел звёзд</strong> — анонимный Telegram-бот поддержки и уютного общения. Через этот веб-портал вы можете в один клик запустить бота, заполнить анкету, ознакомиться с реальными отзывами или отправить обращение администрации через защищённую тикет-систему.<br><br>
-                <span style="font-size: 11px; color: #64748b;">Стек портала: HTML5/CSS3, Vanilla JS, Node.js Serverless, Telegram Bot API, C++17.</span>
+                <span style="font-size: 11px; color: #64748b;">Стек портала: HTML5/CSS3, Vanilla JS, Node.js Serverless, PostgreSQL, Telegram Bot API, C++17.</span>
             </p>
         </details>
 
@@ -180,165 +179,72 @@
             <a href="tg://resolve?domain=ashesstars_bot" class="btn-link btn-main">🌌 Запустить Telegram Бота</a>
             <a href="tg://resolve?domain=anketashesstars_bot" class="btn-link">📝 Заполнить анкету (Анкетница)</a>
             <a href="tg://resolve?domain=pepelzvezdotzv" class="btn-link">⭐️ Отзывы о боте</a>
-            <a href="https://www.tiktok.com/@ashesstarss_bot?_r=1&_t=ZS-9BasQOgIiaT" class="btn-link" target="_blank" rel="noopener">🎵 Наш TikTok</a>
+            <a href="ВСТАВЬТЕ_ССЫЛКУ_ИЗ_ТИКТОКА" class="btn-link" target="_blank" rel="noopener">🎵 Наш TikTok</a>
         </div>
+
         <div class="feedback-form">
-                   <div class="feedback-form">
-                    <div class="feedback-form">
             <h3>📩 Оставить обращение:</h3>
             <select id="ticket-category" class="feedback-select">
                 <option value="review">⭐️ Отзывы</option>
                 <option value="admin">🚨 Вызов админа</option>
             </select>
-            <!-- Невидимая ловушка для спам-ботов -->
             <input type="text" id="hp-website" name="website" autocomplete="off" tabindex="-1" style="position:absolute; left:-9999px; opacity:0; height:0; width:0;" aria-hidden="true">
             <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение здесь..."></textarea>
             <button type="button" id="send-btn" class="btn-submit">Отправить сообщение</button>
             <div id="status-text" class="status-msg"></div>
         </div>
 
-            <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение здесь..."></textarea>
-            <button type="button" id="send-btn" class="btn-submit">Отправить сообщение</button>
-            <div id="status-text" class="status-msg"></div>
-        </div>
-
-            <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение здесь..."></textarea>
-            <button type="button" id="send-btn" class="btn-submit">Отправить сообщение</button>
-            <div id="status-text" class="status-msg"></div>
-        </div>
         <footer>&copy; 2026 Пепел звезд. Все права защищены.</footer>
     </div>
-    <audio id="space-ambient" loop preload="auto">
-        <source src="https://soundhelix.com" type="audio/mp3">
-    </audio>
-            <!-- Скрытое модальное окно панели администратора -->
-    <div id="admin-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(2,6,23,0.92); backdrop-filter:blur(10px); z-index:9999; overflow-y:auto; padding:20px; text-align:left; color:#f8fafc;">
-        <div style="max-width:650px; margin:0 auto; background:rgba(15,23,42,0.9); border:1px solid rgba(192,132,252,0.3); border-radius:20px; padding:24px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="font-size:20px; color:#e9d5ff;">🛡 Центр управления БД и банами</h2>
-                <button type="button" onclick="document.getElementById('admin-modal').style.display='none'" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">✕</button>
-            </div>
-            
-            <div id="admin-auth-box">
-                <input type="password" id="admin-pass-input" placeholder="Введите ADMIN_PASSWORD..." style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:#0b0f19; color:#fff; margin-bottom:12px;">
-                <button type="button" onclick="loadAdminStats()" style="width:100%; padding:12px; border-radius:10px; border:none; background:#a855f7; color:#0b0f19; font-weight:700; cursor:pointer;">Войти в панель</button>
-                <div id="admin-auth-err" style="color:#ef4444; font-size:13px; margin-top:8px;"></div>
-            </div>
-
-            <div id="admin-content-box" style="display:none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                    <span style="font-size:13px; color:#94a3b8;">Последние устройства (Кластеры и Баны):</span>
-                    <button type="button" onclick="loadAdminStats()" style="padding:6px 12px; border-radius:8px; border:1px solid #c084fc; background:transparent; color:#e9d5ff; font-size:12px; cursor:pointer;">🔄 Обновить</button>
-                </div>
-                <div id="admin-devices-list" style="display:flex; flex-direction:column; gap:10px;"></div>
-            </div>
-        </div>
-    </div>
-
-           <script>
-        var btn = document.getElementById('send-btn');
-        var COOLDOWN_SEC = 30;
-        var currentAdminPass = '';
-
-        // 1. Детектор эмуляторов, Selenium, Puppeteer и ботов
+    <script>
         function detectAutomationBot() {
             try {
-                if (navigator.webdriver) return true;
-                if (window.document.documentElement.getAttribute('webdriver')) return true;
-                if (!navigator.languages || navigator.languages.length === 0) return true;
-                if (window.outerWidth === 0 && window.outerHeight === 0) return true;
+                if (navigator.webdriver || !navigator.languages || navigator.languages.length === 0) return true;
                 return false;
-            } catch (e) {
-                return false;
-            }
+            } catch (e) { return false; }
         }
 
-        // 2. Кросс-браузерный AudioContext Fingerprint (сигнатура звукового чипа)
         async function getAudioFingerprint() {
             try {
                 var AudioCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
                 if (!AudioCtx) return 'no_audio';
                 var context = new AudioCtx(1, 44100, 44100);
-                var oscillator = context.createOscillator();
-                oscillator.type = 'triangle';
-                oscillator.frequency.setValueAtTime(10000, context.currentTime);
-
-                var compressor = context.createDynamicsCompressor();
-                compressor.threshold.setValueAtTime(-50, context.currentTime);
-                compressor.knee.setValueAtTime(40, context.currentTime);
-                compressor.ratio.setValueAtTime(12, context.currentTime);
-                compressor.attack.setValueAtTime(0, context.currentTime);
-                compressor.release.setValueAtTime(0.25, context.currentTime);
-
-                oscillator.connect(compressor);
-                compressor.connect(context.destination);
-                oscillator.start(0);
-
+                var osc = context.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(10000, context.currentTime);
+                var comp = context.createDynamicsCompressor();
+                osc.connect(comp);
+                comp.connect(context.destination);
+                osc.start(0);
                 var buffer = await context.startRendering();
                 var data = buffer.getChannelData(0);
                 var sum = 0;
-                for (var i = 4500; i < 5000; i++) {
-                    sum += Math.abs(data[i]);
-                }
+                for (var i = 4500; i < 5000; i++) sum += Math.abs(data[i]);
                 return sum.toFixed(6);
-            } catch (e) {
-                return 'audio_err';
-            }
+            } catch (e) { return 'audio_err'; }
         }
 
-        // 3. Единый генератор отпечатка железа (Canvas + WebGL + AudioContext + SHA-256)
         async function getHardwareFingerprint() {
             try {
                 var canvas = document.createElement('canvas');
                 var ctx = canvas.getContext('2d');
-                ctx.textBaseline = 'top';
                 ctx.font = '14px Arial';
-                ctx.fillStyle = '#f60';
-                ctx.fillRect(125, 1, 62, 20);
-                ctx.fillStyle = '#069';
                 ctx.fillText('PepelZvezd_HW_ID', 2, 15);
-                var canvasData = canvas.toDataURL();
-
                 var gl = document.createElement('canvas').getContext('webgl');
-                var debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
-                var gpu = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'unknown_gpu';
-
+                var dbg = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
+                var gpu = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'unknown_gpu';
                 var audioSig = await getAudioFingerprint();
-
-                var rawSignals = [
-                    canvasData,
-                    gpu,
-                    audioSig,
-                    navigator.hardwareConcurrency || 0,
-                    navigator.deviceMemory || 0,
-                    screen.width + 'x' + screen.height + 'x' + screen.colorDepth,
-                    Intl.DateTimeFormat().resolvedOptions().timeZone
-                ].join('|||');
-
-                var msgBuffer = new TextEncoder().encode(rawSignals);
-                var hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-                var hashArray = Array.from(new Uint8Array(hashBuffer));
-                var hexHash = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
-                return 'fp_' + hexHash.slice(0, 16);
-            } catch (e) {
-                return 'fp_fallback';
-            }
+                var raw = [canvas.toDataURL(), gpu, audioSig, navigator.hardwareConcurrency || 0, screen.width + 'x' + screen.height].join('|||');
+                var hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+                var hex = Array.from(new Uint8Array(hashBuf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+                return 'fp_' + hex.slice(0, 16);
+            } catch (e) { return 'fp_fallback'; }
         }
 
-        // 4. Активация скрытой админки (слово "root" или 5 кликов по звезде)
-        var keyBuffer = '';
-        document.addEventListener('keydown', function(e) {
-            if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
-            keyBuffer = (keyBuffer + e.key.toLowerCase()).slice(-4);
-            if (keyBuffer === 'root') {
-                document.getElementById('admin-modal').style.display = 'block';
-            }
-        });
-
+        var currentAdminPass = '';
         var starClicks = 0;
-        var starEl = document.querySelector('.profile-star');
+        var starEl = document.getElementById('star-trigger');
         if (starEl) {
-            starEl.style.cursor = 'pointer';
             starEl.addEventListener('click', function() {
                 starClicks++;
                 if (starClicks >= 5) {
@@ -354,191 +260,85 @@
             if (passInput) currentAdminPass = passInput;
             var errEl = document.getElementById('admin-auth-err');
             errEl.innerText = 'Загрузка...';
-
             fetch('/api/admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: currentAdminPass, action: 'stats' })
             })
-            .then(async function(r) {
-                var text = await r.text();
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    throw new Error('HTTP ' + r.status + ': ' + text.slice(0, 100));
-                }
-            })
+            .then(function(r) { return r.json(); })
             .then(function(data) {
-                if (!data.ok) {
-                    errEl.innerText = data.error || 'Ошибка доступа';
-                    return;
-                }
+                if (!data.ok) { errEl.innerText = data.error || 'Ошибка'; return; }
                 errEl.innerText = '';
                 document.getElementById('admin-auth-box').style.display = 'none';
                 document.getElementById('admin-content-box').style.display = 'block';
-                renderAdminDevices(data.devices || []);
+                var list = document.getElementById('admin-devices-list');
+                list.innerHTML = '';
+                (data.devices || []).forEach(function(d) {
+                    var card = document.createElement('div');
+                    card.style.cssText = 'background:rgba(30,41,59,0.5); border:1px solid ' + (d.is_banned ? '#ef4444' : 'rgba(255,255,255,0.08)') + '; border-radius:12px; padding:12px; font-size:12px;';
+                    var btnHtml = d.is_banned
+                        ? '<button type="button" onclick="toggleBan(\'' + d.device_hash + '\', \'unban\')" style="background:#22c55e;color:#020617;border:none;padding:6px 10px;border-radius:6px;font-weight:700;">Разбанить</button>'
+                        : '<button type="button" onclick="toggleBan(\'' + d.device_hash + '\', \'ban\')" style="background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:6px;font-weight:700;">⛔️ Бан</button>';
+                    card.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><strong>' + d.device_hash + '</strong>' + btnHtml + '</div>' +
+                        '<div style="color:#94a3b8;">Устройство: ' + d.device + ' | Визитов: ' + d.total_visits + '<br>IP: ' + (d.used_ips || []).join(', ') + '</div>';
+                    list.appendChild(card);
+                });
             })
-            .catch(function(err) {
-                errEl.innerText = 'Детали сбоя: ' + err.message;
-            });
+            .catch(function(e) { errEl.innerText = 'Ошибка: ' + e.message; });
         }
 
-        function renderAdminDevices(devices) {
-            var list = document.getElementById('admin-devices-list');
-            list.innerHTML = '';
-            if (devices.length === 0) {
-                list.innerHTML = '<div style="color:#64748b;font-size:13px;">Записей пока нет</div>';
-                return;
-            }
-            devices.forEach(function(d) {
-                var ips = Array.isArray(d.used_ips) ? d.used_ips.join(', ') : '';
-                var locs = Array.isArray(d.locations) ? d.locations.join(' | ') : '';
-                var card = document.createElement('div');
-                card.style.cssText = 'background:rgba(30,41,59,0.5); border:1px solid ' + (d.is_banned ? '#ef4444' : 'rgba(255,255,255,0.08)') + '; border-radius:12px; padding:12px; font-size:12px;';
-                
-                var actionBtn = d.is_banned
-                    ? '<button onclick="toggleDeviceBan(\'' + d.device_hash + '\', \'unban\')" style="background:#22c55e;color:#020617;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;">Разбанить</button>'
-                    : '<button onclick="toggleDeviceBan(\'' + d.device_hash + '\', \'ban\')" style="background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;">⛔️ Бан железа</button>';
-
-                card.innerHTML =
-                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-                        '<strong style="color:#e9d5ff;font-family:monospace;font-size:13px;">' + d.device_hash + '</strong>' +
-                        actionBtn +
-                    '</div>' +
-                    '<div style="color:#94a3b8;line-height:1.5;">' +
-                        '📱 <b>Устройство:</b> ' + (d.device || 'Unknown') + ' | 👁 <b>Визитов:</b> ' + d.total_visits + '<br>' +
-                        '🌍 <b>Локации:</b> ' + locs + '<br>' +
-                        '🌐 <b>Кластер IP:</b> <span style="font-family:monospace;">' + ips + '</span>' +
-                        (d.is_banned ? '<br><span style="color:#f87171;">⚠️ Причина бана: ' + (d.ban_reason || '') + '</span>' : '') +
-                    '</div>';
-                list.appendChild(card);
-            });
-        }
-
-        function toggleDeviceBan(hash, actionType) {
+        function toggleBan(hash, act) {
             fetch('/api/admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    password: currentAdminPass,
-                    action: actionType,
-                    deviceHash: hash,
-                    reason: 'Заблокирован администратором из панели'
-                })
+                body: JSON.stringify({ password: currentAdminPass, action: act, deviceHash: hash })
             }).then(function() { loadAdminStats(); });
         }
 
-        // 5. Таймер антиспама
-        function updateCooldown() {
-            var lastSent = localStorage.getItem('last_msg_time');
-            if (!lastSent || !btn) return false;
-            var passed = Math.floor((Date.now() - parseInt(lastSent, 10)) / 1000);
-            if (passed < COOLDOWN_SEC) {
-                var left = COOLDOWN_SEC - passed;
+        var btn = document.getElementById('send-btn');
+        if (btn) {
+            btn.onclick = async function() {
+                var input = document.getElementById('user-msg');
+                var cat = document.getElementById('ticket-category').value;
+                var status = document.getElementById('status-text');
+                var text = input.value.trim();
+                status.style.display = 'block';
+                if (text.length < 2) { status.style.color = '#ef4444'; status.innerText = 'Минимум 2 символа!'; return; }
                 btn.disabled = true;
-                btn.style.opacity = '0.5';
-                btn.style.cursor = 'not-allowed';
-                btn.innerText = 'Подождите ' + left + ' сек...';
-                setTimeout(updateCooldown, 1000);
-                return true;
-            } else {
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                btn.style.cursor = 'pointer';
-btn.innerText = 'Отправить сообщение';
-return false;
-}
-}
-updateCooldown();
-if (btn) {
-btn.onclick = async function() {
-if (updateCooldown()) return;
-var input = document.getElementById('user-msg');
-var categorySelect = document.getElementById('ticket-category');
-var status = document.getElementById('status-text');
-var text = input.value.trim();
-var category = categorySelect ? categorySelect.value : 'review';
-status.style.display = 'block';
-if (text.length < 2) {
-status.style.color = '#ef4444';
-status.innerText = 'Введите текст сообщения (минимум 2 символа)!';
-return;
-}
-btn.disabled = true;
-btn.style.opacity = '0.5';
-status.style.color = '#94a3b8';
-status.innerText = 'Отправка...';
-var hwId = await getHardwareFingerprint();
-var hpVal = document.getElementById('hp-website') ? document.getElementById('hp-website').value : '';
-fetch('/api/send', {
-method: 'POST',
-headers: {
-'Content-Type': 'application/json',
-'X-Portal-Client': 'pepel-v2-verified'
-},
-body: JSON.stringify({ text: text, category: category, deviceHash: hwId, honeypot: hpVal })
-})
-.then(function(r) { return r.json(); })
-.then(function(d) {
-if (d.ok) {
-status.style.color = '#4ade80';
-status.innerText = '✨ Сообщение доставлено!';
-input.value = '';
-localStorage.setItem('last_msg_time', Date.now().toString());
-updateCooldown();
-} else {
-btn.disabled = false;
-btn.style.opacity = '1';
-status.style.color = '#ef4444';
-status.innerText = 'Ошибка: ' + (d.description || 'Проверьте настройки сервера');
-}
-})
-.catch(function() {
-btn.disabled = false;
-btn.style.opacity = '1';
-status.style.color = '#ef4444';
-status.innerText = 'Ошибка связи с сервером.';
-});
-};
-}
-// 6. Фоновый эмбиент
-var a = document.getElementById('space-ambient');
-if (a) {
-a.volume = 0.25;
-var p = function() {
-a.play().catch(function(){});
-document.removeEventListener('click', p);
-document.removeEventListener('touchstart', p);
-};
-document.addEventListener('click', p);
-document.addEventListener('touchstart', p);
-}
-// 7. Телеметрия визита + проверка бана и детектор ботов
-(async function() {
-var hwId = await getHardwareFingerprint();
-var isBot = detectAutomationBot();
-fetch('/api/track', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({
-referer: document.referrer || 'Direct',
-deviceHash: hwId,
-isBot: isBot
-})
-})
-.then(function(r) { return r.json(); })
-.then(function(data) {
-if (data && data.banned) {
-document.body.innerHTML = '' +
-'⛔️ Доступ к порталу ограничен' +
-'Причина: ' + data.reason + '' +
-'';
-}
-})
-.catch(function(){});
-})();
-</script>
-    <script defer src="/_vercel/insights/script.js"></script>
+                status.style.color = '#94a3b8';
+                status.innerText = 'Отправка...';
+                var hwId = await getHardwareFingerprint();
+                var hpVal = document.getElementById('hp-website').value;
+                fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Portal-Client': 'pepel-v2-verified' },
+                    body: JSON.stringify({ text: text, category: cat, deviceHash: hwId, honeypot: hpVal })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    btn.disabled = false;
+                    if (d.ok) { status.style.color = '#4ade80'; status.innerText = '✨ Доставлено!'; input.value = ''; }
+                    else { status.style.color = '#ef4444'; status.innerText = 'Ошибка: ' + d.description; }
+                })
+                .catch(function() { btn.disabled = false; status.style.color = '#ef4444'; status.innerText = 'Ошибка сети'; });
+            };
+        }
+
+        (async function() {
+            var hwId = await getHardwareFingerprint();
+            fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ referer: document.referrer || 'Direct', deviceHash: hwId, isBot: detectAutomationBot() })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data && data.banned) {
+                    document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#020617;color:#ef4444;font-family:sans-serif;text-align:center;padding:20px;"><h1>⛔️ Доступ ограничен: ' + data.reason + '</h1></div>';
+                }
+            }).catch(function(){});
+        })();
+    </script>
 </body>
 </html>
 
