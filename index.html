@@ -155,7 +155,7 @@
                 <a href="tg://resolve?domain=ashesstars_bot" class="btn-link btn-main">🌌 Запустить Telegram Бота</a>
                 <a href="tg://resolve?domain=anketashesstars_bot" class="btn-link">📝 Заполнить анкету (Анкетница)</a>
                 <a href="tg://resolve?domain=pepelzvezdotzv" class="btn-link">⭐️ Отзывы о боте</a>
-                <a href="https://tiktok.com" class="btn-link" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🎵 Наш TikTok</a>
+                <a href="https://tiktok.com" id="tiktok-link-btn" class="btn-link" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🎵 Наш TikTok</a>
             </div>
         </div>
 
@@ -269,6 +269,17 @@
             } catch (e) { return ''; }
         }
 
+        function formatChatLinks(rawText) {
+            var div = document.createElement('div');
+            div.textContent = rawText;
+            var safeHtml = div.innerHTML;
+            var urlRegex = /((https?:\/\/|t\.me\/)[^\s<]+)/gi;
+            return safeHtml.replace(urlRegex, function(match) {
+                var href = match.toLowerCase().indexOf('t.me/') === 0 ? 'https://' + match : match;
+                return '<a href="' + href + '" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" style="color:#38bdf8; text-decoration:underline; word-break:break-all; font-weight:600;">' + match + '</a>';
+            });
+        }
+
         function appendChatBubble(sender, text, timeStr) {
             var box = document.getElementById('chat-messages-list');
             if (!box) return;
@@ -287,7 +298,7 @@
                 bubble.appendChild(badge);
             }
             var textNode = document.createElement('div');
-            textNode.innerText = text;
+            textNode.innerHTML = formatChatLinks(text);
             bubble.appendChild(textNode);
             var timeNode = document.createElement('div');
             timeNode.style.cssText = 'font-size:10px; opacity:0.65; text-align:right; margin-top:4px;';
@@ -297,6 +308,14 @@
             box.appendChild(wrapper);
             box.scrollTop = box.scrollHeight;
         }
+        var TIKTOK_PROFILE_URL = 'https://tiktok.com';
+
+        var ttLinkEl = document.querySelector('a[href*="tiktok.com"]');
+        if (ttLinkEl) {
+            ttLinkEl.href = TIKTOK_PROFILE_URL;
+            ttLinkEl.setAttribute('referrerpolicy', 'no-referrer');
+        }
+
         function fetchChatHistory() {
             var tId = localStorage.getItem('active_ticket_id');
             if (!tId) return;
@@ -369,11 +388,16 @@
             }).then(function() { fetchChatHistory(); });
         }
 
-        document.getElementById('close-chat-btn').addEventListener('click', closeLiveChat);
-        document.getElementById('send-reply-btn').addEventListener('click', sendChatReply);
-        document.getElementById('chat-reply-input').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') sendChatReply();
-        });
+        var closeChatBtn = document.getElementById('close-chat-btn');
+        if (closeChatBtn) closeChatBtn.addEventListener('click', closeLiveChat);
+
+        var sendReplyBtn = document.getElementById('send-reply-btn');
+        if (sendReplyBtn) sendReplyBtn.addEventListener('click', sendChatReply);
+
+        var chatInp = document.getElementById('chat-reply-input');
+        if (chatInp) {
+            chatInp.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendChatReply(); });
+        }
 
         var savedTicket = localStorage.getItem('active_ticket_id');
         if (savedTicket) openLiveChat(savedTicket);
@@ -383,22 +407,32 @@
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
             keyBuffer = (keyBuffer + e.key.toLowerCase()).slice(-4);
-            if (keyBuffer === 'root') document.getElementById('admin-modal').style.display = 'block';
+            if (keyBuffer === 'root') {
+                var modal = document.getElementById('admin-modal');
+                if (modal) modal.style.display = 'block';
+            }
         });
 
         var starClicks = 0;
-        document.getElementById('star-trigger').addEventListener('click', function() {
-            starClicks++;
-            if (starClicks >= 5) {
-                starClicks = 0;
-                document.getElementById('admin-modal').style.display = 'block';
-            }
-            setTimeout(function() { starClicks = 0; }, 2500);
-        });
+        var starEl = document.getElementById('star-trigger');
+        if (starEl) {
+            starEl.addEventListener('click', function() {
+                starClicks++;
+                if (starClicks >= 5) {
+                    starClicks = 0;
+                    var modal = document.getElementById('admin-modal');
+                    if (modal) modal.style.display = 'block';
+                }
+                setTimeout(function() { starClicks = 0; }, 2500);
+            });
+        }
 
-        document.getElementById('close-admin-btn').addEventListener('click', function() {
-            document.getElementById('admin-modal').style.display = 'none';
-        });
+        var closeAdminBtn = document.getElementById('close-admin-btn');
+        if (closeAdminBtn) {
+            closeAdminBtn.addEventListener('click', function() {
+                document.getElementById('admin-modal').style.display = 'none';
+            });
+        }
 
         function toggleBan(hash, act) {
             fetch('/api/admin', {
@@ -440,52 +474,58 @@
             .catch(function(e) { errEl.innerText = 'Ошибка: ' + e.message; });
         }
 
-        document.getElementById('login-admin-btn').addEventListener('click', loadAdminStats);
-        document.getElementById('refresh-admin-btn').addEventListener('click', loadAdminStats);
+        var loginAdminBtn = document.getElementById('login-admin-btn');
+        if (loginAdminBtn) loginAdminBtn.addEventListener('click', loadAdminStats);
 
-        document.getElementById('send-btn').addEventListener('click', async function() {
-            var btn = this;
-            var input = document.getElementById('user-msg');
-            var cat = document.getElementById('ticket-category').value;
-            var status = document.getElementById('status-text');
-            var text = input.value.trim();
-            status.style.display = 'block';
-            if (text.length < 2) { status.style.color = '#ef4444'; status.innerText = 'Минимум 2 символа!'; return; }
-            btn.disabled = true;
-            status.style.color = '#94a3b8';
-            status.innerText = 'Отправка...';
-            var hwId = await getHardwareFingerprint();
-            var hpVal = document.getElementById('hp-website').value;
-            fetch('/api/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Portal-Client': 'pepel-v2-verified' },
-                body: JSON.stringify({ text: text, category: cat, deviceHash: hwId, honeypot: hpVal })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                btn.disabled = false;
-                if (d.ok) {
-                    status.style.color = '#4ade80';
-                    status.innerText = '✨ Сообщение доставлено!';
-                    input.value = '';
-                    if (d.ticketId) openLiveChat(d.ticketId);
-                } else {
-                    status.style.color = '#ef4444';
-                    status.innerText = 'Ошибка: ' + d.description;
-                }
-            })
-            .catch(function() { btn.disabled = false; status.style.color = '#ef4444'; status.innerText = 'Ошибка сети'; });
-        });
+        var refreshAdminBtn = document.getElementById('refresh-admin-btn');
+        if (refreshAdminBtn) refreshAdminBtn.addEventListener('click', loadAdminStats);
 
-        setTimeout(async function() {
-            var hwId = await getHardwareFingerprint();
-            fetch('/api/track', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ referer: document.referrer || 'Direct', deviceHash: hwId, isBot: detectAutomationBot() })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
+        var sendBtn = document.getElementById('send-btn');
+        if (sendBtn) {
+            sendBtn.addEventListener('click', async function() {
+                var btn = this;
+                var input = document.getElementById('user-msg');
+                var cat = document.getElementById('ticket-category').value;
+                var status = document.getElementById('status-text');
+                var text = input.value.trim();
+                status.style.display = 'block';
+                if (text.length < 2) { status.style.color = '#ef4444'; status.innerText = 'Минимум 2 символа!'; return; }
+                btn.disabled = true;
+                status.style.color = '#94a3b8';
+                status.innerText = 'Отправка...';
+                var hwId = await getHardwareFingerprint();
+                var hpEl = document.getElementById('hp-website');
+                var hpVal = hpEl ? hpEl.value : '';
+                fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Portal-Client': 'pepel-v2-verified' },
+                    body: JSON.stringify({ text: text, category: cat, deviceHash: hwId, honeypot: hpVal })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+btn.disabled = false;
+if (d.ok) {
+status.style.color = '#4ade80';
+status.innerText = '✨ Сообщение доставлено!';
+input.value = '';
+if (d.ticketId) openLiveChat(d.ticketId);
+} else {
+status.style.color = '#ef4444';
+status.innerText = 'Ошибка: ' + d.description;
+}
+})
+.catch(function() { btn.disabled = false; status.style.color = '#ef4444'; status.innerText = 'Ошибка сети'; });
+});
+}
+setTimeout(async function() {
+var hwId = await getHardwareFingerprint();
+fetch('/api/track', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ referer: document.referrer || 'Direct', deviceHash: hwId, isBot: detectAutomationBot() })
+})
+.then(function(r) { return r.json(); })
+.then(function(data) {
 if (data && data.banned) {
 document.body.innerHTML = '⛔️ Доступ ограничен: ' + data.reason + '';
 }
