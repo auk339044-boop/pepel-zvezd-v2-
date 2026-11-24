@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Пепел звезд | Официальные ссылки</title>
+    <script src="https://jsdelivr.net"></script>
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -46,28 +47,21 @@
             to { background-position: 550px 1100px, 1400px 1050px, 1000px 1350px; }
         }
         .main-wrapper {
-            width: 100%;
-            max-width: 450px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            width: 100%; max-width: 450px;
+            display: flex; flex-direction: column; gap: 20px;
         }
         .panel-card {
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 28px 24px;
-            border-radius: 24px;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 28px 24px; border-radius: 24px;
             background: rgba(15, 23, 42, 0.55);
             border: 1px solid rgba(255, 255, 255, 0.06);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
-            text-align: center;
-            position: relative;
+            text-align: center; position: relative;
         }
         .profile-star {
             width: 80px; height: 80px; margin: 0 auto 20px; position: relative; background: #fff;
             clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-            animation: pulseGlow 4s ease-in-out infinite alternate;
-            cursor: pointer;
+            animation: pulseGlow 4s ease-in-out infinite alternate; cursor: pointer;
         }
         @keyframes pulseGlow {
             0% { transform: scale(0.95) rotate(0deg); background: #f3e8ff; }
@@ -177,16 +171,20 @@
             <button type="button" id="send-btn" class="btn-submit">Отправить сообщение</button>
             <div id="status-text" class="status-msg"></div>
 
-            <!-- Двусторонний живой чат с админами прямо на сайте -->
-            <div id="live-chat-box" style="display:none; margin-top:18px; border-top:1px solid rgba(255,255,255,0.1); padding-top:16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <span style="font-size:13px; font-weight:700; color:#e9d5ff;">💬 Диалог #<span id="chat-ticket-num"></span></span>
-                    <button type="button" onclick="closeLiveChat()" style="background:none; border:none; color:#94a3b8; font-size:12px; cursor:pointer;">Закрыть ✕</button>
+            <div id="live-chat-box" style="display:none; margin-top:20px; border-top:1px solid rgba(192,132,252,0.2); padding-top:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(30,41,59,0.6); padding:10px 14px; border-radius:12px 12px 0 0; border:1px solid rgba(255,255,255,0.06);">
+                    <div>
+                        <div style="font-size:13px; font-weight:700; color:#f8fafc;">💬 Чат с поддержкой #<span id="chat-ticket-num"></span></div>
+                        <div style="font-size:11px; color:#4ade80; margin-top:2px;">● Подключено в реальном времени</div>
+                    </div>
+                    <button type="button" onclick="closeLiveChat()" title="Завершить диалог" style="background:rgba(255,255,255,0.08); border:none; color:#cbd5e1; padding:5px 9px; border-radius:8px; font-size:12px; cursor:pointer;">✕</button>
                 </div>
-                <div id="chat-messages-list" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:rgba(11,15,25,0.75); padding:12px; border-radius:12px; margin-bottom:10px; font-size:13px;"></div>
-                <div style="display:flex; gap:8px;">
-                    <input type="text" id="chat-reply-input" placeholder="Написать ответ..." style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:#0b0f19; color:#fff; font-size:13px; outline:none;">
-                    <button type="button" onclick="sendChatReply()" style="padding:10px 15px; border-radius:10px; border:none; background:#a855f7; color:#0b0f19; font-weight:700; cursor:pointer;">➤</button>
+
+                <div id="chat-messages-list" style="height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; background:rgba(11,15,25,0.85); padding:14px; border-left:1px solid rgba(255,255,255,0.06); border-right:1px solid rgba(255,255,255,0.06); font-size:13px;"></div>
+
+                <div style="display:flex; gap:8px; background:rgba(30,41,59,0.6); padding:10px; border-radius:0 0 12px 12px; border:1px solid rgba(255,255,255,0.06);">
+                    <input type="text" id="chat-reply-input" placeholder="Напишите сообщение..." style="flex:1; padding:10px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.12); background:#0b0f19; color:#fff; font-size:13px; outline:none;">
+                    <button type="button" onclick="sendChatReply()" style="width:40px; height:40px; border-radius:50%; border:none; background:linear-gradient(135deg, #a855f7, #c084fc); color:#0b0f19; font-weight:700; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center;">➤</button>
                 </div>
             </div>
 
@@ -215,6 +213,13 @@
         </div>
     </div>
     <script>
+        var SUPABASE_PUBLIC_URL = 'ВСТАВЬТЕ_ВАШ_SUPABASE_URL';
+        var SUPABASE_ANON_KEY = 'ВСТАВЬТЕ_ВАШ_ПУБЛИЧНЫЙ_ANON_KEY';
+        var sbClient = (window.supabase && SUPABASE_PUBLIC_URL.startsWith('http'))
+            ? window.supabase.createClient(SUPABASE_PUBLIC_URL, SUPABASE_ANON_KEY)
+            : null;
+        var activeRealtimeChannel = null;
+
         function detectAutomationBot() {
             try {
                 return Boolean(navigator.webdriver || !navigator.languages || navigator.languages.length === 0);
@@ -258,23 +263,46 @@
             } catch (e) { return 'fp_fallback'; }
         }
 
-        // --- ДВУСТОРОННИЙ ЖИВОЙ ЧАТ ---
-        var chatPollTimer = null;
-
-        function openLiveChat(tId) {
-            if (!tId) return;
-            localStorage.setItem('active_ticket_id', tId);
-            document.getElementById('chat-ticket-num').innerText = tId;
-            document.getElementById('live-chat-box').style.display = 'block';
-            fetchChatHistory();
-            if (chatPollTimer) clearInterval(chatPollTimer);
-            chatPollTimer = setInterval(fetchChatHistory, 5000);
+        function formatMsgTime(isoStr) {
+            try {
+                var d = isoStr ? new Date(isoStr) : new Date();
+                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } catch (e) { return ''; }
         }
 
-        function closeLiveChat() {
-            localStorage.removeItem('active_ticket_id');
-            document.getElementById('live-chat-box').style.display = 'none';
-            if (chatPollTimer) clearInterval(chatPollTimer);
+        function appendChatBubble(sender, text, timeStr) {
+            var box = document.getElementById('chat-messages-list');
+            var isAdmin = sender === 'admin';
+            
+            var wrapper = document.createElement('div');
+            wrapper.style.cssText = 'display:flex; flex-direction:column; max-width:82%; ' +
+                (isAdmin ? 'align-self:flex-start;' : 'align-self:flex-end;');
+
+            var bubble = document.createElement('div');
+            bubble.style.cssText = 'padding:10px 14px; line-height:1.45; word-wrap:break-word; position:relative; ' +
+                (isAdmin
+                    ? 'background:rgba(30,41,59,0.95); border:1px solid rgba(192,132,252,0.35); color:#f8fafc; border-radius:16px 16px 16px 4px;'
+                    : 'background:linear-gradient(135deg, #6b21a8 0%, #4c1d95 100%); border:1px solid rgba(192,132,252,0.25); color:#ffffff; border-radius:16px 16px 4px 16px;');
+
+            if (isAdmin) {
+                var badge = document.createElement('div');
+                badge.style.cssText = 'font-size:11px; font-weight:700; color:#c084fc; margin-bottom:4px;';
+                badge.innerText = '🛡 Администратор';
+                bubble.appendChild(badge);
+            }
+
+            var textNode = document.createElement('div');
+            textNode.innerText = text;
+            bubble.appendChild(textNode);
+
+            var timeNode = document.createElement('div');
+            timeNode.style.cssText = 'font-size:10px; opacity:0.65; text-align:right; margin-top:4px;';
+            timeNode.innerText = timeStr || formatMsgTime();
+            bubble.appendChild(timeNode);
+
+            wrapper.appendChild(bubble);
+            box.appendChild(wrapper);
+            box.scrollTop = box.scrollHeight;
         }
 
         function fetchChatHistory() {
@@ -291,23 +319,42 @@
                 var box = document.getElementById('chat-messages-list');
                 box.innerHTML = '';
                 data.messages.forEach(function(m) {
-                    var isAdmin = m.sender === 'admin';
-                    var msgDiv = document.createElement('div');
-                    msgDiv.style.cssText = 'padding:8px 12px; border-radius:10px; max-width:85%; word-wrap:break-word; ' +
-                        (isAdmin
-                            ? 'align-self:flex-start; background:rgba(168,85,247,0.25); border:1px solid rgba(192,132,252,0.4); color:#f3e8ff;'
-                            : 'align-self:flex-end; background:rgba(30,41,59,0.9); color:#e2e8f0;');
-                    var label = document.createElement('div');
-                    label.style.cssText = 'font-size:10px; opacity:0.7; margin-bottom:2px;';
-                    label.innerText = isAdmin ? '🛡 Администратор' : 'Вы';
-                    var bodyTxt = document.createElement('div');
-                    bodyTxt.innerText = m.message_text;
-                    msgDiv.appendChild(label);
-                    msgDiv.appendChild(bodyTxt);
-                    box.appendChild(msgDiv);
+                    appendChatBubble(m.sender, m.message_text, formatMsgTime(m.created_at));
                 });
-                box.scrollTop = box.scrollHeight;
             }).catch(function(){});
+        }
+
+        function openLiveChat(tId) {
+            if (!tId) return;
+            localStorage.setItem('active_ticket_id', tId);
+            document.getElementById('chat-ticket-num').innerText = tId;
+            document.getElementById('live-chat-box').style.display = 'block';
+            fetchChatHistory();
+
+            if (sbClient) {
+                if (activeRealtimeChannel) sbClient.removeChannel(activeRealtimeChannel);
+                activeRealtimeChannel = sbClient
+                    .channel('ticket_' + tId)
+                    .on(
+                        'postgres_changes',
+                        { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: 'ticket_id=eq.' + tId },
+                        function(payload) {
+                            var newMsg = payload.new;
+                            if (newMsg && newMsg.sender === 'admin') {
+                                appendChatBubble('admin', newMsg.message_text, formatMsgTime(newMsg.created_at));
+                            }
+                        }
+                    )
+                    .subscribe();
+            }
+        }
+
+        function closeLiveChat() {
+            localStorage.removeItem('active_ticket_id');
+            document.getElementById('live-chat-box').style.display = 'none';
+            if (sbClient && activeRealtimeChannel) {
+                sbClient.removeChannel(activeRealtimeChannel);
+            }
         }
 
         function sendChatReply() {
@@ -316,11 +363,12 @@
             var txt = inp.value.trim();
             if (!tId || !txt) return;
             inp.value = '';
+            appendChatBubble('user', txt, formatMsgTime());
             fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'reply', ticketId: tId, text: txt })
-            }).then(function() { fetchChatHistory(); });
+            });
         }
 
         var chatInp = document.getElementById('chat-reply-input');
@@ -333,7 +381,6 @@
         var savedTicket = localStorage.getItem('active_ticket_id');
         if (savedTicket) openLiveChat(savedTicket);
 
-        // --- СКРЫТАЯ АДМИН-ПАНЕЛЬ ---
         var currentAdminPass = '';
         var keyBuffer = '';
         document.addEventListener('keydown', function(e) {
@@ -377,38 +424,37 @@
                 list.innerHTML = '';
                 (data.devices || []).forEach(function(d) {
                     var card = document.createElement('div');
-                    card.style.cssText = 'background:rgba(30,41,59,0.5); border:1px solid ' + (d.is_banned ? '#ef4444' : 'rgba(255,255,255,0.08)') + '; border-radius:12px; padding:12px; font-size:12px;';
-                    var btnHtml = d.is_banned
-                        ? '<button type="button" onclick="toggleBan(\'' + d.device_hash + '\', \'unban\')" style="background:#22c55e;color:#020617;border:none;padding:6px 10px;border-radius:6px;font-weight:700;">Разбанить</button>'
-                        : '<button type="button" onclick="toggleBan(\'' + d.device_hash + '\', \'ban\')" style="background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:6px;font-weight:700;">⛔️ Бан</button>';
-                    card.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><strong>' + d.device_hash + '</strong>' + btnHtml + '</div>' +
-                        '<div style="color:#94a3b8;line-height:1.5;">' +
-                        '📱 Устройство: ' + (d.device || 'Unknown') + ' | 👁 Визитов: ' + d.total_visits + '<br>' +
-                        '🌍 Локация: ' + (d.locations || []).join(', ') + '<br>' +
-                        '🌐 IP: ' + (d.used_ips || []).join(', ') +
-                        '</div>';
-                    list.appendChild(card);
-                });
-            })
-            .catch(function(e) { errEl.innerText = 'Ошибка: ' + e.message; });
-        }
-
-        function toggleBan(hash, act) {
-            fetch('/api/admin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: currentAdminPass, action: act, deviceHash: hash })
-            }).then(function() { loadAdminStats(); });
-        }
-
-        // --- ОТПРАВКА ПЕРВОГО ОБРАЩЕНИЯ ---
-        var btn = document.getElementById('send-btn');
-        if (btn) {
-            btn.onclick = async function() {
-                var input = document.getElementById('user-msg');
-                var cat = document.getElementById('ticket-category').value;
-                var status = document.getElementById('status-text');
-                var text = input.value.trim();
+card.style.cssText = 'background:rgba(30,41,59,0.5); border:1px solid ' + (d.is_banned ? '#ef4444' : 'rgba(255,255,255,0.08)') + '; border-radius:12px; padding:12px; font-size:12px;';
+var btnHtml = d.is_banned
+? 'Разбанить'
+: '⛔️ Бан';
+card.innerHTML = '' + d.device_hash + '' + btnHtml + '' +
+'' +
+'📱 Устройство: ' + (d.device || 'Unknown') + ' | 👁 Визитов: ' + d.total_visits + '
+' +
+'🌍 Локация: ' + (d.locations || []).join(', ') + '
+' +
+'🌐 IP: ' + (d.used_ips || []).join(', ') +
+'';
+list.appendChild(card);
+});
+})
+.catch(function(e) { errEl.innerText = 'Ошибка: ' + e.message; });
+}
+function toggleBan(hash, act) {
+fetch('/api/admin', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ password: currentAdminPass, action: act, deviceHash: hash })
+}).then(function() { loadAdminStats(); });
+}
+var btn = document.getElementById('send-btn');
+if (btn) {
+btn.onclick = async function() {
+var input = document.getElementById('user-msg');
+var cat = document.getElementById('ticket-category').value;
+var status = document.getElementById('status-text');
+var text = input.value.trim();
 status.style.display = 'block';
 if (text.length < 2) { status.style.color = '#ef4444'; status.innerText = 'Минимум 2 символа!'; return; }
 btn.disabled = true;
@@ -438,7 +484,6 @@ status.innerText = 'Ошибка: ' + d.description;
 .catch(function() { btn.disabled = false; status.style.color = '#ef4444'; status.innerText = 'Ошибка сети'; });
 };
 }
-// --- ТЕЛЕМЕТРИЯ ---
 setTimeout(async function() {
 var hwId = await getHardwareFingerprint();
 fetch('/api/track', {
@@ -455,4 +500,4 @@ document.body.innerHTML = '⛔️ Доступ ограничен: ' + data.reas
 }, 400);
 </script>
 </body>
-</html>
+</html>        
