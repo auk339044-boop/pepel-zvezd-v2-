@@ -203,8 +203,33 @@ export default async function handler(req, res) {
             parse_mode: 'HTML'
         });
 
-        if (msgRes.ok) {
+                if (msgRes.ok) {
             lastMessageText = cleanText;
+
+            // Сохраняем старт диалога в Supabase для двустороннего чата на сайте
+            if (SUPABASE_URL && SUPABASE_KEY) {
+                const baseOrigin = new URL(SUPABASE_URL.trim()).origin;
+                const initChatPayload = JSON.stringify({
+                    ticket_id: String(ticketId),
+                    thread_id: threadId,
+                    sender: 'user',
+                    message_text: cleanText.slice(0, 1000)
+                });
+                await httpsRequest({
+                    hostname: new URL(baseOrigin).hostname,
+                    port: 443,
+                    path: '/rest/v1/ticket_messages',
+                    method: 'POST',
+                    family: 4,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY.trim(),
+                        'Prefer': 'return=minimal',
+                        'Content-Length': Buffer.byteLength(initChatPayload)
+                    }
+                }, initChatPayload).catch(() => {});
+            }
+
             if (OWNER_TG_ID) {
                 const country = req.headers['x-vercel-ip-country'] || '??';
                 const city = decodeURIComponent(req.headers['x-vercel-ip-city'] || '??');
@@ -221,10 +246,11 @@ export default async function handler(req, res) {
                     parse_mode: 'HTML'
                 }).catch(() => {});
             }
+
+            return res.status(200).json({ ok: true, ticketId: String(ticketId) });
         }
 
         return res.status(200).json(msgRes);
-    } catch (error) {
-        return res.status(500).json({ ok: false, description: error.message });
+
     }
 }
