@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Пепел звезд | Официальные ссылки</title>
-    <script defer src="https://jsdelivr.net"></script>
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -175,16 +174,16 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(30,41,59,0.6); padding:10px 14px; border-radius:12px 12px 0 0; border:1px solid rgba(255,255,255,0.06);">
                     <div>
                         <div style="font-size:13px; font-weight:700; color:#f8fafc;">💬 Чат с поддержкой #<span id="chat-ticket-num"></span></div>
-                        <div style="font-size:11px; color:#4ade80; margin-top:2px;">● Подключено в реальном времени</div>
+                        <div style="font-size:11px; color:#4ade80; margin-top:2px;">● Диалог активен</div>
                     </div>
-                    <button type="button" onclick="closeLiveChat()" title="Завершить диалог" style="background:rgba(255,255,255,0.08); border:none; color:#cbd5e1; padding:5px 9px; border-radius:8px; font-size:12px; cursor:pointer;">✕</button>
+                    <button type="button" id="close-chat-btn" style="background:rgba(255,255,255,0.08); border:none; color:#cbd5e1; padding:5px 9px; border-radius:8px; font-size:12px; cursor:pointer;">✕</button>
                 </div>
 
                 <div id="chat-messages-list" style="height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; background:rgba(11,15,25,0.85); padding:14px; border-left:1px solid rgba(255,255,255,0.06); border-right:1px solid rgba(255,255,255,0.06); font-size:13px;"></div>
 
                 <div style="display:flex; gap:8px; background:rgba(30,41,59,0.6); padding:10px; border-radius:0 0 12px 12px; border:1px solid rgba(255,255,255,0.06);">
                     <input type="text" id="chat-reply-input" placeholder="Напишите сообщение..." style="flex:1; padding:10px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.12); background:#0b0f19; color:#fff; font-size:13px; outline:none;">
-                    <button type="button" onclick="sendChatReply()" style="width:40px; height:40px; border-radius:50%; border:none; background:linear-gradient(135deg, #a855f7, #c084fc); color:#0b0f19; font-weight:700; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center;">➤</button>
+                    <button type="button" id="send-reply-btn" style="width:40px; height:40px; border-radius:50%; border:none; background:linear-gradient(135deg, #a855f7, #c084fc); color:#0b0f19; font-weight:700; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center;">➤</button>
                 </div>
             </div>
 
@@ -196,29 +195,29 @@
         <div style="max-width:650px; margin:0 auto; background:rgba(15,23,42,0.95); border:1px solid rgba(192,132,252,0.3); border-radius:20px; padding:24px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2 style="font-size:18px; color:#e9d5ff;">🛡 Центр управления БД и банами</h2>
-                <button type="button" onclick="document.getElementById('admin-modal').style.display='none'" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">✕</button>
+                <button type="button" id="close-admin-btn" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">✕</button>
             </div>
             <div id="admin-auth-box">
                 <input type="password" id="admin-pass-input" placeholder="Введите ADMIN_PASSWORD..." style="width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:#0b0f19; color:#fff; margin-bottom:12px;">
-                <button type="button" onclick="loadAdminStats()" style="width:100%; padding:12px; border-radius:10px; border:none; background:#a855f7; color:#0b0f19; font-weight:700; cursor:pointer;">Войти в панель</button>
+                <button type="button" id="login-admin-btn" style="width:100%; padding:12px; border-radius:10px; border:none; background:#a855f7; color:#0b0f19; font-weight:700; cursor:pointer;">Войти в панель</button>
                 <div id="admin-auth-err" style="color:#ef4444; font-size:13px; margin-top:8px;"></div>
             </div>
             <div id="admin-content-box" style="display:none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                     <span style="font-size:13px; color:#94a3b8;">Устройства и кластеры:</span>
-                    <button type="button" onclick="loadAdminStats()" style="padding:6px 12px; border-radius:8px; border:1px solid #c084fc; background:transparent; color:#e9d5ff; font-size:12px; cursor:pointer;">🔄 Обновить</button>
+                    <button type="button" id="refresh-admin-btn" style="padding:6px 12px; border-radius:8px; border:1px solid #c084fc; background:transparent; color:#e9d5ff; font-size:12px; cursor:pointer;">🔄 Обновить</button>
                 </div>
                 <div id="admin-devices-list" style="display:flex; flex-direction:column; gap:10px;"></div>
             </div>
         </div>
     </div>
+    <script defer src="https://jsdelivr.net"></script>
     <script>
-        var SUPABASE_PUBLIC_URL = 'https://fufnomoxylcidapjyprs.supabase.co/rest/v1/';
-        var SUPABASE_ANON_KEY = 'sb_secret_lVpJsJOz3CsainH5PforTQ_H9C9s9ld;
-        var sbClient = (window.supabase && SUPABASE_PUBLIC_URL.startsWith('http'))
-            ? window.supabase.createClient(SUPABASE_PUBLIC_URL, SUPABASE_ANON_KEY)
-            : null;
+        var SUPABASE_PUBLIC_URL = '';
+        var SUPABASE_ANON_KEY = '';
+        var sbClient = null;
         var activeRealtimeChannel = null;
+        var fallbackPollTimer = null;
 
         function detectAutomationBot() {
             try {
@@ -272,39 +271,32 @@
 
         function appendChatBubble(sender, text, timeStr) {
             var box = document.getElementById('chat-messages-list');
+            if (!box) return;
             var isAdmin = sender === 'admin';
-            
             var wrapper = document.createElement('div');
-            wrapper.style.cssText = 'display:flex; flex-direction:column; max-width:82%; ' +
-                (isAdmin ? 'align-self:flex-start;' : 'align-self:flex-end;');
-
+            wrapper.style.cssText = 'display:flex; flex-direction:column; max-width:82%; ' + (isAdmin ? 'align-self:flex-start;' : 'align-self:flex-end;');
             var bubble = document.createElement('div');
-            bubble.style.cssText = 'padding:10px 14px; line-height:1.45; word-wrap:break-word; position:relative; ' +
+            bubble.style.cssText = 'padding:10px 14px; line-height:1.45; word-wrap:break-word; ' +
                 (isAdmin
                     ? 'background:rgba(30,41,59,0.95); border:1px solid rgba(192,132,252,0.35); color:#f8fafc; border-radius:16px 16px 16px 4px;'
                     : 'background:linear-gradient(135deg, #6b21a8 0%, #4c1d95 100%); border:1px solid rgba(192,132,252,0.25); color:#ffffff; border-radius:16px 16px 4px 16px;');
-
             if (isAdmin) {
                 var badge = document.createElement('div');
                 badge.style.cssText = 'font-size:11px; font-weight:700; color:#c084fc; margin-bottom:4px;';
                 badge.innerText = '🛡 Администратор';
                 bubble.appendChild(badge);
             }
-
             var textNode = document.createElement('div');
             textNode.innerText = text;
             bubble.appendChild(textNode);
-
             var timeNode = document.createElement('div');
             timeNode.style.cssText = 'font-size:10px; opacity:0.65; text-align:right; margin-top:4px;';
             timeNode.innerText = timeStr || formatMsgTime();
             bubble.appendChild(timeNode);
-
             wrapper.appendChild(bubble);
             box.appendChild(wrapper);
             box.scrollTop = box.scrollHeight;
         }
-
         function fetchChatHistory() {
             var tId = localStorage.getItem('active_ticket_id');
             if (!tId) return;
@@ -317,6 +309,7 @@
             .then(function(data) {
                 if (!data.ok || !Array.isArray(data.messages)) return;
                 var box = document.getElementById('chat-messages-list');
+                if (!box) return;
                 box.innerHTML = '';
                 data.messages.forEach(function(m) {
                     appendChatBubble(m.sender, m.message_text, formatMsgTime(m.created_at));
@@ -327,39 +320,44 @@
         function openLiveChat(tId) {
             if (!tId) return;
             localStorage.setItem('active_ticket_id', tId);
-            document.getElementById('chat-ticket-num').innerText = tId;
-            document.getElementById('live-chat-box').style.display = 'block';
+            var numEl = document.getElementById('chat-ticket-num');
+            var chatBox = document.getElementById('live-chat-box');
+            if (numEl) numEl.innerText = tId;
+            if (chatBox) chatBox.style.display = 'block';
             fetchChatHistory();
 
+            if (fallbackPollTimer) clearInterval(fallbackPollTimer);
+            fallbackPollTimer = setInterval(fetchChatHistory, 3000);
+
+            if (!sbClient && window.supabase && SUPABASE_PUBLIC_URL.indexOf('http') === 0) {
+                sbClient = window.supabase.createClient(SUPABASE_PUBLIC_URL, SUPABASE_ANON_KEY);
+            }
             if (sbClient) {
                 if (activeRealtimeChannel) sbClient.removeChannel(activeRealtimeChannel);
                 activeRealtimeChannel = sbClient
                     .channel('ticket_' + tId)
-                    .on(
-                        'postgres_changes',
-                        { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: 'ticket_id=eq.' + tId },
-                        function(payload) {
-                            var newMsg = payload.new;
-                            if (newMsg && newMsg.sender === 'admin') {
-                                appendChatBubble('admin', newMsg.message_text, formatMsgTime(newMsg.created_at));
-                            }
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: 'ticket_id=eq.' + tId }, function(payload) {
+                        var newMsg = payload.new;
+                        if (newMsg && newMsg.sender === 'admin') {
+                            fetchChatHistory();
                         }
-                    )
+                    })
                     .subscribe();
             }
         }
 
         function closeLiveChat() {
             localStorage.removeItem('active_ticket_id');
-            document.getElementById('live-chat-box').style.display = 'none';
-            if (sbClient && activeRealtimeChannel) {
-                sbClient.removeChannel(activeRealtimeChannel);
-            }
+            var chatBox = document.getElementById('live-chat-box');
+            if (chatBox) chatBox.style.display = 'none';
+            if (fallbackPollTimer) clearInterval(fallbackPollTimer);
+            if (sbClient && activeRealtimeChannel) sbClient.removeChannel(activeRealtimeChannel);
         }
 
         function sendChatReply() {
             var tId = localStorage.getItem('active_ticket_id');
             var inp = document.getElementById('chat-reply-input');
+            if (!inp) return;
             var txt = inp.value.trim();
             if (!tId || !txt) return;
             inp.value = '';
@@ -368,15 +366,14 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'reply', ticketId: tId, text: txt })
-            });
+            }).then(function() { fetchChatHistory(); });
         }
 
-        var chatInp = document.getElementById('chat-reply-input');
-        if (chatInp) {
-            chatInp.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') sendChatReply();
-            });
-        }
+        document.getElementById('close-chat-btn').addEventListener('click', closeLiveChat);
+        document.getElementById('send-reply-btn').addEventListener('click', sendChatReply);
+        document.getElementById('chat-reply-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') sendChatReply();
+        });
 
         var savedTicket = localStorage.getItem('active_ticket_id');
         if (savedTicket) openLiveChat(savedTicket);
@@ -386,22 +383,29 @@
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
             keyBuffer = (keyBuffer + e.key.toLowerCase()).slice(-4);
-            if (keyBuffer === 'root') {
-                document.getElementById('admin-modal').style.display = 'block';
-            }
+            if (keyBuffer === 'root') document.getElementById('admin-modal').style.display = 'block';
         });
 
         var starClicks = 0;
-        var starEl = document.getElementById('star-trigger');
-        if (starEl) {
-            starEl.addEventListener('click', function() {
-                starClicks++;
-                if (starClicks >= 5) {
-                    starClicks = 0;
-                    document.getElementById('admin-modal').style.display = 'block';
-                }
-                setTimeout(function() { starClicks = 0; }, 2500);
-            });
+        document.getElementById('star-trigger').addEventListener('click', function() {
+            starClicks++;
+            if (starClicks >= 5) {
+                starClicks = 0;
+                document.getElementById('admin-modal').style.display = 'block';
+            }
+            setTimeout(function() { starClicks = 0; }, 2500);
+        });
+
+        document.getElementById('close-admin-btn').addEventListener('click', function() {
+            document.getElementById('admin-modal').style.display = 'none';
+        });
+
+        function toggleBan(hash, act) {
+            fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: currentAdminPass, action: act, deviceHash: hash })
+            }).then(function() { loadAdminStats(); });
         }
 
         function loadAdminStats() {
@@ -424,75 +428,64 @@
                 list.innerHTML = '';
                 (data.devices || []).forEach(function(d) {
                     var card = document.createElement('div');
-card.style.cssText = 'background:rgba(30,41,59,0.5); border:1px solid ' + (d.is_banned ? '#ef4444' : 'rgba(255,255,255,0.08)') + '; border-radius:12px; padding:12px; font-size:12px;';
-var btnHtml = d.is_banned
-? 'Разбанить'
-: '⛔️ Бан';
-card.innerHTML = '' + d.device_hash + '' + btnHtml + '' +
-'' +
-'📱 Устройство: ' + (d.device || 'Unknown') + ' | 👁 Визитов: ' + d.total_visits + '
-' +
-'🌍 Локация: ' + (d.locations || []).join(', ') + '
-' +
-'🌐 IP: ' + (d.used_ips || []).join(', ') +
-'';
-list.appendChild(card);
-});
-})
-.catch(function(e) { errEl.innerText = 'Ошибка: ' + e.message; });
-}
-function toggleBan(hash, act) {
-fetch('/api/admin', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ password: currentAdminPass, action: act, deviceHash: hash })
-}).then(function() { loadAdminStats(); });
-}
-var btn = document.getElementById('send-btn');
-if (btn) {
-btn.onclick = async function() {
-var input = document.getElementById('user-msg');
-var cat = document.getElementById('ticket-category').value;
-var status = document.getElementById('status-text');
-var text = input.value.trim();
-status.style.display = 'block';
-if (text.length < 2) { status.style.color = '#ef4444'; status.innerText = 'Минимум 2 символа!'; return; }
-btn.disabled = true;
-status.style.color = '#94a3b8';
-status.innerText = 'Отправка...';
-var hwId = await getHardwareFingerprint();
-var hpEl = document.getElementById('hp-website');
-var hpVal = hpEl ? hpEl.value : '';
-fetch('/api/send', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json', 'X-Portal-Client': 'pepel-v2-verified' },
-body: JSON.stringify({ text: text, category: cat, deviceHash: hwId, honeypot: hpVal })
-})
-.then(function(r) { return r.json(); })
-.then(function(d) {
-btn.disabled = false;
-if (d.ok) {
-status.style.color = '#4ade80';
-status.innerText = '✨ Сообщение доставлено!';
-input.value = '';
-if (d.ticketId) openLiveChat(d.ticketId);
-} else {
-status.style.color = '#ef4444';
-status.innerText = 'Ошибка: ' + d.description;
-}
-})
-.catch(function() { btn.disabled = false; status.style.color = '#ef4444'; status.innerText = 'Ошибка сети'; });
-};
-}
-setTimeout(async function() {
-var hwId = await getHardwareFingerprint();
-fetch('/api/track', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ referer: document.referrer || 'Direct', deviceHash: hwId, isBot: detectAutomationBot() })
-})
-.then(function(r) { return r.json(); })
-.then(function(data) {
+                    card.style.cssText = 'background:rgba(30,41,59,0.5); border:1px solid ' + (d.is_banned ? '#ef4444' : 'rgba(255,255,255,0.08)') + '; border-radius:12px; padding:12px; font-size:12px;';
+                    var btnHtml = d.is_banned
+                        ? '<button type="button" onclick="toggleBan(\'' + d.device_hash + '\', \'unban\')" style="background:#22c55e;color:#020617;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;">Разбанить</button>'
+                        : '<button type="button" onclick="toggleBan(\'' + d.device_hash + '\', \'ban\')" style="background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;">⛔️ Бан</button>';
+                    card.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><strong>' + d.device_hash + '</strong>' + btnHtml + '</div>' +
+                        '<div style="color:#94a3b8;line-height:1.5;">📱 Устройство: ' + (d.device || 'Unknown') + ' | 👁 Визитов: ' + d.total_visits + '<br>🌍 Локация: ' + (d.locations || []).join(', ') + '<br>🌐 IP: ' + (d.used_ips || []).join(', ') + '</div>';
+                    list.appendChild(card);
+                });
+            })
+            .catch(function(e) { errEl.innerText = 'Ошибка: ' + e.message; });
+        }
+
+        document.getElementById('login-admin-btn').addEventListener('click', loadAdminStats);
+        document.getElementById('refresh-admin-btn').addEventListener('click', loadAdminStats);
+
+        document.getElementById('send-btn').addEventListener('click', async function() {
+            var btn = this;
+            var input = document.getElementById('user-msg');
+            var cat = document.getElementById('ticket-category').value;
+            var status = document.getElementById('status-text');
+            var text = input.value.trim();
+            status.style.display = 'block';
+            if (text.length < 2) { status.style.color = '#ef4444'; status.innerText = 'Минимум 2 символа!'; return; }
+            btn.disabled = true;
+            status.style.color = '#94a3b8';
+            status.innerText = 'Отправка...';
+            var hwId = await getHardwareFingerprint();
+            var hpVal = document.getElementById('hp-website').value;
+            fetch('/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Portal-Client': 'pepel-v2-verified' },
+                body: JSON.stringify({ text: text, category: cat, deviceHash: hwId, honeypot: hpVal })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                btn.disabled = false;
+                if (d.ok) {
+                    status.style.color = '#4ade80';
+                    status.innerText = '✨ Сообщение доставлено!';
+                    input.value = '';
+                    if (d.ticketId) openLiveChat(d.ticketId);
+                } else {
+                    status.style.color = '#ef4444';
+                    status.innerText = 'Ошибка: ' + d.description;
+                }
+            })
+            .catch(function() { btn.disabled = false; status.style.color = '#ef4444'; status.innerText = 'Ошибка сети'; });
+        });
+
+        setTimeout(async function() {
+            var hwId = await getHardwareFingerprint();
+            fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ referer: document.referrer || 'Direct', deviceHash: hwId, isBot: detectAutomationBot() })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
 if (data && data.banned) {
 document.body.innerHTML = '⛔️ Доступ ограничен: ' + data.reason + '';
 }
@@ -500,4 +493,4 @@ document.body.innerHTML = '⛔️ Доступ ограничен: ' + data.reas
 }, 400);
 </script>
 </body>
-</html>        
+</html>
