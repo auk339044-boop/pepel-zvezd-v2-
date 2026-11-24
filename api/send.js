@@ -47,7 +47,6 @@ async function checkDeviceBan(supabaseUrl, supabaseKey, deviceHash) {
         const baseOrigin = new URL(supabaseUrl.trim()).origin;
         const cleanHash = String(deviceHash).trim();
         const path = `/rest/v1/banned_devices?device_hash=eq.${encodeURIComponent(cleanHash)}&select=reason`;
-        
         const res = await httpsRequest({
             hostname: new URL(baseOrigin).hostname,
             port: 443,
@@ -56,14 +55,11 @@ async function checkDeviceBan(supabaseUrl, supabaseKey, deviceHash) {
             family: 4,
             headers: { 'apikey': supabaseKey.trim() }
         });
-
         if (Array.isArray(res.data) && res.data.length > 0) {
             const first = res.data.shift();
             return first.reason || 'Доступ ограничен';
         }
-    } catch (e) {
-        console.error('Ban check error:', e.message);
-    }
+    } catch (e) {}
     return null;
 }
 
@@ -75,7 +71,6 @@ async function banDeviceImmediately(supabaseUrl, supabaseKey, deviceHash, reason
             device_hash: String(deviceHash).trim(),
             reason: reason
         });
-
         await httpsRequest({
             hostname: new URL(baseOrigin).hostname,
             port: 443,
@@ -94,11 +89,7 @@ async function banDeviceImmediately(supabaseUrl, supabaseKey, deviceHash, reason
 
 function escapeHTML(str) {
     return str.replace(/[&<>'"]/g, tag => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        "'": '&#39;',
-        '"': '&quot;'
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
     }[tag]));
 }
 
@@ -107,11 +98,10 @@ export default async function handler(req, res) {
         return res.status(405).json({ ok: false, description: 'Method not allowed' });
     }
 
-    // 1. Защита периметра: проверяем Origin и наличие кастомного заголовка от нашего клиента
     const origin = req.headers.origin || '';
     const clientSig = req.headers['x-portal-client'] || '';
     if ((origin && !origin.includes('.vercel.app') && !origin.includes('localhost')) || clientSig !== 'pepel-v2-verified') {
-        return res.status(403).json({ ok: false, description: 'Доступ запрещен (Security Perimeter)' });
+        return res.status(403).json({ ok: false, description: 'Доступ запрещен' });
     }
 
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
@@ -148,21 +138,11 @@ export default async function handler(req, res) {
 
     const { text, category, deviceHash, honeypot } = req.body || {};
 
-    // 2. ЛОВУШКА HONEYPOT: Если скрытое поле заполнено — это 100% спам-бот
     if (honeypot && String(honeypot).trim().length > 0) {
-        await banDeviceImmediately(SUPABASE_URL, SUPABASE_KEY, deviceHash, 'Авто-бан: сработала Honeypot-ловушка (Спам-бот)');
-        if (OWNER_TG_ID) {
-            await tgRequest(TG_BOT_TOKEN, 'sendMessage', {
-                chat_id: OWNER_TG_ID.trim(),
-                text: `🍯 <b>Сработала Honeypot-ловушка!</b>\nБот заблокирован по железу: <code>${escapeHTML(deviceHash || 'unknown')}</code>\n🌐 IP: <code>${clientIp}</code>`,
-                parse_mode: 'HTML'
-            }).catch(() => {});
-        }
-        // Возвращаем фейковый успех, чтобы бот думал, что сообщение прошло
+        await banDeviceImmediately(SUPABASE_URL, SUPABASE_KEY, deviceHash, 'Авто-бан: сработала Honeypot-ловушка');
         return res.status(200).json({ ok: true });
     }
 
-    // 3. Проверка черного списка по железу
     const banReason = await checkDeviceBan(SUPABASE_URL, SUPABASE_KEY, deviceHash);
     if (banReason) {
         return res.status(403).json({ ok: false, description: `⛔️ Устройство заблокировано (${banReason})` });
@@ -203,10 +183,9 @@ export default async function handler(req, res) {
             parse_mode: 'HTML'
         });
 
-                if (msgRes.ok) {
+        if (msgRes.ok) {
             lastMessageText = cleanText;
 
-            // Сохраняем старт диалога в Supabase для двустороннего чата на сайте
             if (SUPABASE_URL && SUPABASE_KEY) {
                 const baseOrigin = new URL(SUPABASE_URL.trim()).origin;
                 const initChatPayload = JSON.stringify({
@@ -251,6 +230,7 @@ export default async function handler(req, res) {
         }
 
         return res.status(200).json(msgRes);
-
+    } catch (error) {
+        return res.status(500).json({ ok: false, description: error.message });
     }
 }
