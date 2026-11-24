@@ -21,7 +21,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 24px;
+            padding: 20px;
             overflow-x: hidden;
             position: relative;
         }
@@ -45,25 +45,17 @@
             from { background-position: 0 0, 40px 60px, 130px 270px; }
             to { background-position: 550px 1100px, 1400px 1050px, 1000px 1350px; }
         }
-               .main-wrapper {
+        .main-wrapper {
             width: 100%;
             max-width: 450px;
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
-
-        }
-        @media (max-width: 820px) {
-            .main-wrapper {
-                grid-template-columns: 1fr;
-                max-width: 450px;
-            }
-        }
         .panel-card {
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            padding: 32px 28px;
+            padding: 28px 24px;
             border-radius: 24px;
             background: rgba(15, 23, 42, 0.55);
             border: 1px solid rgba(255, 255, 255, 0.06);
@@ -130,7 +122,7 @@
             outline: none; margin-bottom: 14px; cursor: pointer;
         }
         .feedback-textarea {
-            width: 100%; height: 115px; background: rgba(11, 15, 25, 0.85);
+            width: 100%; height: 100px; background: rgba(11, 15, 25, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
             padding: 14px; color: #fff; font-family: inherit; font-size: 14px;
             resize: none; outline: none; margin-bottom: 14px;
@@ -142,7 +134,7 @@
         }
         .btn-submit:hover { opacity: 0.92; }
         .status-msg { font-size: 13px; margin-top: 12px; display: none; font-weight: 600; }
-        footer { margin-top: 24px; font-size: 11px; color: #475569; text-align: center; }
+        footer { margin-top: 20px; font-size: 11px; color: #475569; text-align: center; }
     </style>
 </head>
 <body>
@@ -162,7 +154,7 @@
                     <span style="font-size: 11px; color: #c084fc;">▼</span>
                 </summary>
                 <p>
-                    <strong>Пепел звёзд</strong> — анонимный Telegram-бот поддержки и уютного общения. Через этот веб-портал вы можете в один клик запустить бота, заполнить анкету, ознакомиться с реальными отзывами или отправить обращение администрации через защищённую тикет-систему.
+                    <strong>Пепел звёзд</strong> — анонимный Telegram-бот поддержки и уютного общения. Через этот веб-портал вы можете в один клик запустить бота, заполнить анкету, ознакомиться с отзывами или пообщаться с администрацией в живом чате прямо на странице.
                 </p>
             </details>
 
@@ -170,8 +162,7 @@
                 <a href="tg://resolve?domain=ashesstars_bot" class="btn-link btn-main">🌌 Запустить Telegram Бота</a>
                 <a href="tg://resolve?domain=anketashesstars_bot" class="btn-link">📝 Заполнить анкету (Анкетница)</a>
                 <a href="tg://resolve?domain=pepelzvezdotzv" class="btn-link">⭐️ Отзывы о боте</a>
-               <a href="https://www.tiktok.com/@ashesstarss_bot?_r=1&_t=ZS-9BasQOgIiaT" class="btn-link" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🎵 Наш TikTok</a>
-
+                <a href="https://tiktok.com" class="btn-link" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">🎵 Наш TikTok</a>
             </div>
         </div>
 
@@ -185,6 +176,20 @@
             <textarea id="user-msg" class="feedback-textarea" placeholder="Введите ваше сообщение здесь..."></textarea>
             <button type="button" id="send-btn" class="btn-submit">Отправить сообщение</button>
             <div id="status-text" class="status-msg"></div>
+
+            <!-- Двусторонний живой чат с админами прямо на сайте -->
+            <div id="live-chat-box" style="display:none; margin-top:18px; border-top:1px solid rgba(255,255,255,0.1); padding-top:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-size:13px; font-weight:700; color:#e9d5ff;">💬 Диалог #<span id="chat-ticket-num"></span></span>
+                    <button type="button" onclick="closeLiveChat()" style="background:none; border:none; color:#94a3b8; font-size:12px; cursor:pointer;">Закрыть ✕</button>
+                </div>
+                <div id="chat-messages-list" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; background:rgba(11,15,25,0.75); padding:12px; border-radius:12px; margin-bottom:10px; font-size:13px;"></div>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="chat-reply-input" placeholder="Написать ответ..." style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:#0b0f19; color:#fff; font-size:13px; outline:none;">
+                    <button type="button" onclick="sendChatReply()" style="padding:10px 15px; border-radius:10px; border:none; background:#a855f7; color:#0b0f19; font-weight:700; cursor:pointer;">➤</button>
+                </div>
+            </div>
+
             <footer>&copy; 2026 Пепел звезд. Все права защищены.</footer>
         </div>
     </div>
@@ -253,6 +258,82 @@
             } catch (e) { return 'fp_fallback'; }
         }
 
+        // --- ДВУСТОРОННИЙ ЖИВОЙ ЧАТ ---
+        var chatPollTimer = null;
+
+        function openLiveChat(tId) {
+            if (!tId) return;
+            localStorage.setItem('active_ticket_id', tId);
+            document.getElementById('chat-ticket-num').innerText = tId;
+            document.getElementById('live-chat-box').style.display = 'block';
+            fetchChatHistory();
+            if (chatPollTimer) clearInterval(chatPollTimer);
+            chatPollTimer = setInterval(fetchChatHistory, 5000);
+        }
+
+        function closeLiveChat() {
+            localStorage.removeItem('active_ticket_id');
+            document.getElementById('live-chat-box').style.display = 'none';
+            if (chatPollTimer) clearInterval(chatPollTimer);
+        }
+
+        function fetchChatHistory() {
+            var tId = localStorage.getItem('active_ticket_id');
+            if (!tId) return;
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'history', ticketId: tId })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.ok || !Array.isArray(data.messages)) return;
+                var box = document.getElementById('chat-messages-list');
+                box.innerHTML = '';
+                data.messages.forEach(function(m) {
+                    var isAdmin = m.sender === 'admin';
+                    var msgDiv = document.createElement('div');
+                    msgDiv.style.cssText = 'padding:8px 12px; border-radius:10px; max-width:85%; word-wrap:break-word; ' +
+                        (isAdmin
+                            ? 'align-self:flex-start; background:rgba(168,85,247,0.25); border:1px solid rgba(192,132,252,0.4); color:#f3e8ff;'
+                            : 'align-self:flex-end; background:rgba(30,41,59,0.9); color:#e2e8f0;');
+                    var label = document.createElement('div');
+                    label.style.cssText = 'font-size:10px; opacity:0.7; margin-bottom:2px;';
+                    label.innerText = isAdmin ? '🛡 Администратор' : 'Вы';
+                    var bodyTxt = document.createElement('div');
+                    bodyTxt.innerText = m.message_text;
+                    msgDiv.appendChild(label);
+                    msgDiv.appendChild(bodyTxt);
+                    box.appendChild(msgDiv);
+                });
+                box.scrollTop = box.scrollHeight;
+            }).catch(function(){});
+        }
+
+        function sendChatReply() {
+            var tId = localStorage.getItem('active_ticket_id');
+            var inp = document.getElementById('chat-reply-input');
+            var txt = inp.value.trim();
+            if (!tId || !txt) return;
+            inp.value = '';
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'reply', ticketId: tId, text: txt })
+            }).then(function() { fetchChatHistory(); });
+        }
+
+        var chatInp = document.getElementById('chat-reply-input');
+        if (chatInp) {
+            chatInp.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') sendChatReply();
+            });
+        }
+
+        var savedTicket = localStorage.getItem('active_ticket_id');
+        if (savedTicket) openLiveChat(savedTicket);
+
+        // --- СКРЫТАЯ АДМИН-ПАНЕЛЬ ---
         var currentAdminPass = '';
         var keyBuffer = '';
         document.addEventListener('keydown', function(e) {
@@ -320,6 +401,7 @@
             }).then(function() { loadAdminStats(); });
         }
 
+        // --- ОТПРАВКА ПЕРВОГО ОБРАЩЕНИЯ ---
         var btn = document.getElementById('send-btn');
         if (btn) {
             btn.onclick = async function() {
@@ -327,43 +409,50 @@
                 var cat = document.getElementById('ticket-category').value;
                 var status = document.getElementById('status-text');
                 var text = input.value.trim();
-                status.style.display = 'block';
-                if (text.length < 2) { status.style.color = '#ef4444'; status.innerText = 'Минимум 2 символа!'; return; }
-                btn.disabled = true;
-                status.style.color = '#94a3b8';
-                status.innerText = 'Отправка...';
-                var hwId = await getHardwareFingerprint();
-                var hpEl = document.getElementById('hp-website');
-                var hpVal = hpEl ? hpEl.value : '';
-                fetch('/api/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Portal-Client': 'pepel-v2-verified' },
-                    body: JSON.stringify({ text: text, category: cat, deviceHash: hwId, honeypot: hpVal })
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(d) {
-                    btn.disabled = false;
-                    if (d.ok) { status.style.color = '#4ade80'; status.innerText = '✨ Сообщение доставлено!'; input.value = ''; }
-                    else { status.style.color = '#ef4444'; status.innerText = 'Ошибка: ' + d.description; }
-                })
-                .catch(function() { btn.disabled = false; status.style.color = '#ef4444'; status.innerText = 'Ошибка сети'; });
-            };
-        }
-
-        setTimeout(async function() {
-            var hwId = await getHardwareFingerprint();
-            fetch('/api/track', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ referer: document.referrer || 'Direct', deviceHash: hwId, isBot: detectAutomationBot() })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data && data.banned) {
-                    document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#020617;color:#ef4444;font-family:sans-serif;text-align:center;padding:20px;"><h1>⛔️ Доступ ограничен: ' + data.reason + '</h1></div>';
-                }
-            }).catch(function(){});
-        }, 400);
-    </script>
+status.style.display = 'block';
+if (text.length < 2) { status.style.color = '#ef4444'; status.innerText = 'Минимум 2 символа!'; return; }
+btn.disabled = true;
+status.style.color = '#94a3b8';
+status.innerText = 'Отправка...';
+var hwId = await getHardwareFingerprint();
+var hpEl = document.getElementById('hp-website');
+var hpVal = hpEl ? hpEl.value : '';
+fetch('/api/send', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json', 'X-Portal-Client': 'pepel-v2-verified' },
+body: JSON.stringify({ text: text, category: cat, deviceHash: hwId, honeypot: hpVal })
+})
+.then(function(r) { return r.json(); })
+.then(function(d) {
+btn.disabled = false;
+if (d.ok) {
+status.style.color = '#4ade80';
+status.innerText = '✨ Сообщение доставлено!';
+input.value = '';
+if (d.ticketId) openLiveChat(d.ticketId);
+} else {
+status.style.color = '#ef4444';
+status.innerText = 'Ошибка: ' + d.description;
+}
+})
+.catch(function() { btn.disabled = false; status.style.color = '#ef4444'; status.innerText = 'Ошибка сети'; });
+};
+}
+// --- ТЕЛЕМЕТРИЯ ---
+setTimeout(async function() {
+var hwId = await getHardwareFingerprint();
+fetch('/api/track', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ referer: document.referrer || 'Direct', deviceHash: hwId, isBot: detectAutomationBot() })
+})
+.then(function(r) { return r.json(); })
+.then(function(data) {
+if (data && data.banned) {
+document.body.innerHTML = '⛔️ Доступ ограничен: ' + data.reason + '';
+}
+}).catch(function(){});
+}, 400);
+</script>
 </body>
 </html>
