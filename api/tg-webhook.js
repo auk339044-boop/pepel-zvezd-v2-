@@ -31,7 +31,6 @@ export default async function handler(req, res) {
     const update = req.body || {};
     const msg = update.message;
 
-    // Реагируем только на текстовые сообщения от живых админов (не от ботов) внутри нашей админ-группы
     if (!msg || !msg.text || !msg.message_thread_id || (msg.from && msg.from.is_bot)) {
         return res.status(200).json({ ok: true });
     }
@@ -40,7 +39,6 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
     }
 
-    // Игнорируем системные команды со слэшем
     if (msg.text.startsWith('/')) {
         return res.status(200).json({ ok: true });
     }
@@ -51,7 +49,6 @@ export default async function handler(req, res) {
         const apiKey = SUPABASE_KEY.trim();
         const threadId = msg.message_thread_id;
 
-        // 1. Находим ticket_id по ID ветки (thread_id)
         const findRes = await httpsRequest({
             hostname: hostname,
             port: 443,
@@ -64,7 +61,6 @@ export default async function handler(req, res) {
         if (Array.isArray(findRes.data) && findRes.data.length > 0) {
             const ticketId = findRes.data.shift().ticket_id;
 
-            // 2. Сохраняем ответ админа в базу данных
             const payload = JSON.stringify({
                 ticket_id: ticketId,
                 thread_id: threadId,
